@@ -1,8 +1,3 @@
-# Cinoop
-- Create a window
-- Read documents to get a good overview
-- Registers
-
 # Technical Data
 - CPU: 8bit
 - Clock speed: 4.194304MHz (4.295454MHz for SGB, max. 8.4MHz for CGB)
@@ -18,20 +13,5 @@
 - Vert Sync: 59.73 Hz
 - Sound: 4 channels with stereo sound
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <windows.h>
-#include <direct.h>
-#include <gl/gl.h>
-#include <LDFS.h>
-
-#include "rom.h"
-#include "cpu.h"
-#include "gpu.h"
-#include "interrupts.h"
-#include "opengl.h"
-#include "debug.h"
-#include "keys.h"
-
-#include "main.h"
+# References from other emulators
+- Cinoop header files: rom, cpu, gpu, interrupts, opengel, debug, keys, main
