@@ -11,7 +11,16 @@ int main(int arg, char *argv[])
         } else {
             SDL_BlitSurface( gSplash, NULL, gScreenSurface, NULL );
             SDL_UpdateWindowSurface( gWindow );
-            SDL_Delay( 2000 );
+            bool quit = false;
+            SDL_Event e;
+
+            while ( !quit ) {
+                while ( SDL_PollEvent( &e ) != 0 ) {
+                    if ( e.type == SDL_QUIT ) {
+                        quit = true;
+                    }
+                }
+            }
         }
         SDL_close();
         return 0;
