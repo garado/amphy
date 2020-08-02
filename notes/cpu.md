@@ -14,5 +14,8 @@
 # Function pointers
 - [Function pointers in a nutshell](https://www.youtube.com/watch?v=ynYtgGUNelE)
 - [Function pointers for emudev](http://www.multigesture.net/wp-content/uploads/mirror/zenogais/FunctionPointers.htm)
-- [Instruction set map](https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html) (super useful!!!)
 - With a function pointer table, you can just call instruction_table[opcode] instead of having a giant switch case (or, god forbid, an if else chain)
+
+# Other stuff
+- [Opcode summary](http://gameboy.mongenel.com/dmg/opcodes.html)
+- [Instruction set map](https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html) (super useful!!!)
