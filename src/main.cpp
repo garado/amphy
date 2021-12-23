@@ -12,29 +12,14 @@ int main( int argc, char* args[] )
     Cpu* cpu = new Cpu;
 
     cpu->copyRom("gba/pkmn.gb");  
+
+    // Infinite CPU loop
+    for (;;) {
+        bool result = cpu->execute();
+        if (result) break;
+    }
     
-    // std::cout << "Printing rom" << std::endl;
-    // for (int i = 0; i < 0x3FFF; i++) {
-    //     std::cout << std::hex << (int) cpu->mem[i] << std::endl;
-    // }
-    // std::cout << "Finished" << std::endl;
-
-//    cpu->execute(instr);
-
-
-
-    // std::ifstream infile("gba/pkmn.gba");
-    // uint8_t instr;
-    // if (!infile.is_open()) std::cout << "somethings wrong" << std::endl;
-    // int max = 10;
-    // while (infile.is_open()) {
-    //     infile >> instr;
-    //     std::cout << std::hex << (int) instr << std::endl;
-    //     max--;
-    //     if (max == 0) break;
-    // }
-
-    // from lazyfoo
+    // from lazyfoo (need to refactor later)
     //Start up SDL and create window
     if( !win->init() ) {
         std::cout << "Failed to initialize!" << std::endl;

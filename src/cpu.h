@@ -5,28 +5,37 @@
 #include <fstream>
 #include <vector>
 
-// Memory locations
-
 class Cpu 
 {
     public:
         // registers
-        uint8_t a;
-        uint8_t b;
-        uint8_t c;
-        uint8_t d;
-        uint8_t e;
-        uint8_t f;
-        uint8_t h;
+        uint16_t af = 0x01B0;
+        uint16_t bc = 0x0013;
+        uint16_t de = 0x00D8;
+        uint16_t hl = 0x014D;
         uint16_t sp = 0xFFFE; // stack pointer
         uint16_t pc = 0x0100; // program counter
-    
+
         // memory
-//        uint8_t mem[0xFFFF];
-        uint8_t what;
         std::vector<uint8_t> mem;
+
+        // enums for flag register
+        enum flags {
+            ZERO, SUB, HALF_CARRY, CARRY
+        };
 
     public:
         void copyRom(std::string fname);
-        void execute(uint8_t opcode);
+        bool execute();
+
+    public:
+        void NOP();
+        
+        void JP_nn();
+        void XOR_a();
+
+        void LD_HL_nn();
+        void LD_B_n();
+        void LD_C_n();
+        void LDD_HL_A();
 };
