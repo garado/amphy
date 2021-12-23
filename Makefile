@@ -1,25 +1,26 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = main.cpp
+OBJS = src/main.cpp src/cpu.cpp src/win.cpp
 
 #CC specifies which compiler we're using
-CC = g++ -std=c++0x
+CC = g++
 
 #INCLUDE_PATHS specifies the additional include paths we'll need
-INCLUDE_PATHS = -IC:\MinGW\include\SDL2
+INCLUDE_PATHS = -IC:\mingw_dev_lib\include\SDL2
 
 #LIBRARY_PATHS specifies the additional library paths we'll need
-LIBRARY_PATHS = -LC:\MinGW\lib
+LIBRARY_PATHS = -LC:\mingw_dev_lib\lib
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
 # -w suppresses all warnings
 # -Wl,-subsystem,windows gets rid of the console window
-COMPILER_FLAGS = 
+COMPILER_FLAGS = -w 
+# -Wl,-subsystem,windows
 
 #LINKER_FLAGS specifies the libraries we're linking against
-LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_mixer
+LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2
 
 #OBJ_NAME specifies the name of our exectuable
-OBJ_NAME = Amphy
+OBJ_NAME = amphy
 
 #This is the target that compiles our executable
 all : $(OBJS)

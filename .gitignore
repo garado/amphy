@@ -1,1 +1,2 @@
-source/Amphy.exe
+*.exe
+.vscode
