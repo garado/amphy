@@ -9,7 +9,7 @@ class Cpu
 {
     public:
         // Internal registers
-        uint16_t af = 0x01B0;
+        uint16_t af = 0x01A0;
         uint16_t bc = 0x0013;
         uint16_t de = 0x00D8;
         uint16_t hl = 0x014D;
@@ -47,17 +47,20 @@ class Cpu
         std::vector<uint8_t> oam;
         
         // IO registers FF00-FF7F
-        std::vector<uint8_t> io_reg;
+        std::vector<uint8_t> io_reg = std::vector<uint8_t>(128);
         
         // High ram. FF80-FFFE
-        std::vector<uint8_t> hram;
+        std::vector<uint8_t> hram = std::vector<uint8_t>(128);
         
         // Interrupt enable reg
         uint8_t int_enable;
 
+        // Timing
+        int cycleCount = 0;
+
     public:
         void copyRom(std::string fname);
-        bool execute();
+        bool cycle();
         uint8_t mem(uint16_t address);
         void mem(uint16_t address, uint8_t val);
         void regdump();
@@ -78,7 +81,11 @@ class Cpu
         void DEC_c();
 
         void LD_HL_nn();
+        void LD_A_n();
         void LD_B_n();
         void LD_C_n();
         void LDD_HL_A();
+        void LDH_n_A();
+        void LDH_A_n();
+        void DI();
 };

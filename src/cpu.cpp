@@ -62,6 +62,8 @@ void Cpu::regdump() {
     std::cout << "hl: " << std::hex << (int) hl << std::endl;
     std::cout << "sp: " << std::hex << (int) sp << std::endl;
     std::cout << "pc: " << std::hex << (int) pc << std::endl;
+
+    std::cout << "opcode: " << std::hex << (int) mem(pc) << std::endl;
 }
 
 /* temp function
@@ -139,22 +141,27 @@ void Cpu::mem(uint16_t address, uint8_t val) {
 }
 
 /* Cpu::execute
- * Handles execution of all opcodes
- */
-bool Cpu::execute() {
+ * Handles execution of all opcodes */
+bool Cpu::cycle() {
     uint8_t opcode = mem(pc);
     switch (opcode) {
         case 0x00: NOP();       break;
-        case 0x0D: DEC_c();     break;
         case 0x05: DEC_b();     break;
-        case 0x20: JR_NZ_n();   break;
-        case 0x32: LDD_HL_A();  break;
         case 0x06: LD_B_n();    break;
+        case 0x0D: DEC_c();     break;
         case 0x0E: LD_C_n();    break;
+        case 0x20: JR_NZ_n();   break;
         case 0x21: LD_HL_nn();  break;
+        case 0x32: LDD_HL_A();  break;
+        case 0x3E: LD_A_n();    break;
         case 0xAF: XOR_a();     break;
         case 0xC3: JP_nn();     break;
-        default:   unknown(opcode); return EXIT_FAILURE;
+        case 0xE0: LDH_n_A();   break;
+        case 0xF0: LDH_A_n();   break;
+        case 0xF3: DI();        break;
+        default:   
+            unknown(opcode); 
+            return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 };
@@ -162,50 +169,50 @@ bool Cpu::execute() {
 // ================= OPCODES ================= //
 
 // ===== MISC =====
-/* NOP
- * No operation
- */
+/* 00: NOP
+ * No operation. */
 void Cpu::NOP() {
     pc += 1;
 }
 
-// ===== JUMPS =====
-/* JP nn
+/* F3: DI
+ *  Reset IME flag and prohibit maskable interrupts */
+void Cpu::DI() {
+    // ???
+    pc += 1;
+}
+
+// ========== JUMPS ==========
+/* C3: JP nn
  * Jump to address nn.
- * nn = two byte immediate value. (LS byte first.)
- */
+ * nn = two byte immediate value. (LS byte first.) */
 void Cpu::JP_nn() {
     uint8_t lsb = mem(++pc);
     uint8_t msb = mem(++pc);
     pc = (msb << 8) | lsb;
 }
 
-/* JR NZ, n
- * If zero flag == 0 add n to current address and jump to it
- */
+/* 20: JR NZ, n
+ * If zero flag == 0 add n to current address and jump to it */
 void Cpu::JR_NZ_n() {
     int8_t val = mem(++pc);
+    ++pc;
     if (flag(ZERO) == false) {
         pc += val;
-    } else {
-        pc += 1;
     }
 }
 
-// ===== 8-BIT ALU =====
-/* XOR A
+// ========== 8-BIT ALU ==========
+/* AF: XOR A
  * Reg A = A ^ A;
- * this xor always sets A to zero so don't even bother w the xor i guess
- */
+ * this xor always sets A to zero so don't even bother w the xor i guess */
 void Cpu::XOR_a() {
-    af &= 0x00FF;   // Set A to 0
-    flag(ZERO, true);
+    af = 0x0080;   // Set A to 0 and sets flags accordingly
     pc += 1;
 }
 
-/* DEC B
- * Decrement value in reg B by 1
- */
+/* 05: DEC B
+ * Decrement value in reg B by 1 */
 void Cpu::DEC_b() {
     uint8_t b_prev = (bc & 0xFF00) >> 8;
     uint8_t b_new = b_prev - 1;
@@ -227,13 +234,12 @@ void Cpu::DEC_b() {
     pc += 1;
 }
 
-/* DEC C
- * Decrement value in reg C by 1
- */
+/* 0D: DEC C
+ * Decrement value in reg C by 1 */
 void Cpu::DEC_c() {
-    uint8_t c_prev = (bc & 0x00FF);
+    uint8_t c_prev = (bc & 0xFF);
     uint8_t c_new = c_prev - 1;
-    bc = (bc & 0xFF) | c_new;
+    bc = (bc & 0xFF00) | c_new;
 
     // Set flags
     flag(SUB, true);
@@ -251,10 +257,25 @@ void Cpu::DEC_c() {
     pc += 1;
 }
 
-// ===== LOADS =====
-/* LD HL, nn
- * Put value nn into HL
- */
+// ========== LOADS ==========
+/* 06:LD B, n
+ * Put immediate value n into B */
+void Cpu::LD_B_n() {
+    uint8_t n = mem(pc+1);
+    bc = (bc & 0x00FF) | (n << 8);
+    pc += 2;
+}
+
+/* 0E: LD C, n
+ * Put immediate value n into C */
+void Cpu::LD_C_n() {
+    uint8_t n = mem(pc+1);
+    bc = (bc & 0xFF00) | n;
+    pc += 2;
+}
+
+/* 21: LD HL, nn
+ * Put value nn into HL */
 void Cpu::LD_HL_nn() {
     uint8_t lsb = mem(pc+1);
     uint8_t msb = mem(pc+2);
@@ -262,32 +283,40 @@ void Cpu::LD_HL_nn() {
     pc += 3;
 }
 
-/* LD B, n
- * Put value n into B
- */
-void Cpu::LD_B_n() {
-    uint8_t n = mem(pc+1);
-    bc = (bc & 0x00FF) | (n << 8);
-    pc += 2;
-}
-
-/* LD C, n
- * Put value n into C 
- */
-void Cpu::LD_C_n() {
-    uint8_t n = mem(pc+1);
-    bc = (bc & 0xFF00) | n;
-    pc += 2;
-}
-
-/* LD (HL-), A
+/* 32: LD (HL-), A
  * Stores the contents of register A into the memory location specified by register pair HL, 
- * and decrements the contents of HL.
- */
+ * and decrements the contents of HL. */
 void Cpu::LDD_HL_A() {
     uint16_t address = hl;
     uint8_t val = (af & 0xFF00) >> 8;
     mem(address, val);
     hl--;
     pc += 1;
+}
+
+/* 3E: LD A, n
+ * Put immediate value n into A */
+void Cpu::LD_A_n() {
+    uint8_t n = mem(pc+1);
+    af = (af & 0x00FF) | (n << 8);
+    pc += 2;
+}
+
+/* E0: LDH (n), A
+ * Put A into memory address $FF00 + n. */
+void Cpu::LDH_n_A() {
+    uint16_t address = 0xFF00 | mem(pc+1);
+    uint8_t a = (af & 0xFF00) >> 8;
+    mem(address, a);
+    pc += 2;
+}
+
+/* F0: LDH (A), n
+ * Put value in memory address $FF00 + n into A. */
+void Cpu::LDH_A_n() {
+    uint16_t n = mem(pc+1);
+    uint16_t address = 0xFF00 | n;
+    uint8_t val = mem(address);
+    af = (af & 0x00FF) | (val << 8);
+    pc += 2;
 }
