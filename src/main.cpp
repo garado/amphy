@@ -8,7 +8,7 @@
 
 int main( int argc, char* args[] )
 {
-    Window* win = new Window;
+    // Window* win = new Window;
     Cpu* cpu = new Cpu;
 
     cpu->copyRom("gba/pkmn.gb");  
@@ -17,7 +17,7 @@ int main( int argc, char* args[] )
     for (;;) {
         bool result;
         try {
-            result = cpu->cycle();
+            result = cpu->execute();
             if (result == EXIT_FAILURE) break;
         } catch (std::out_of_range& oor) {
             cpu->regdump();
@@ -25,21 +25,21 @@ int main( int argc, char* args[] )
         }
     }
     
-    // from lazyfoo (need to refactor later)
-    //Start up SDL and create window
-    if( !win->init() ) {
-        std::cout << "Failed to initialize!" << std::endl;
-    } else {
-        //Load media
-        if( !win->loadMedia() ) {
-            printf( "Failed to load media!\n" );
-        } else {
-            win->applyImg();
-        }
-    }
+    // // from lazyfoo (need to refactor later)
+    // //Start up SDL and create window
+    // if( !win->init() ) {
+    //     std::cout << "Failed to initialize!" << std::endl;
+    // } else {
+    //     //Load media
+    //     if( !win->loadMedia() ) {
+    //         printf( "Failed to load media!\n" );
+    //     } else {
+    //         win->applyImg();
+    //     }
+    // }
 
     // Free resources and close SDL
-    win->close();
+    // win->close();
 
     return 0;
 }

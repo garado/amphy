@@ -9,10 +9,14 @@ class Cpu
 {
     public:
         // Internal registers
-        uint16_t af = 0x01A0;
-        uint16_t bc = 0x0013;
-        uint16_t de = 0x00D8;
-        uint16_t hl = 0x014D;
+        uint8_t a = 0x01;
+        uint8_t f = 0xB0;
+        uint8_t b = 0x00;
+        uint8_t c = 0x13;
+        uint8_t d = 0x00;
+        uint8_t e = 0xD8;
+        uint8_t h = 0x01;
+        uint8_t l = 0x4D;
         uint16_t sp = 0xFFFE; // stack pointer
         uint16_t pc = 0x0100; // program counter
 
@@ -56,11 +60,11 @@ class Cpu
         uint8_t int_enable;
 
         // Timing
-        int cycleCount = 0;
+        int cycleCount = 0; // in m-cycles, whatever the hell that is
 
     public:
         void copyRom(std::string fname);
-        bool cycle();
+        bool execute();
         uint8_t mem(uint16_t address);
         void mem(uint16_t address, uint8_t val);
         void regdump();
@@ -72,20 +76,15 @@ class Cpu
 
     public:
         void NOP();
-        
-        void JP_nn();
-        void JR_NZ_n();
-
-        void XOR_a();
-        void DEC_b();
-        void DEC_c();
-
-        void LD_HL_nn();
-        void LD_A_n();
-        void LD_B_n();
-        void LD_C_n();
-        void LDD_HL_A();
+        void DEC_n(uint8_t* reg);
+        void XOR_n(uint8_t* reg);
+        void LD_R_n(uint8_t* reg);
+        void JR_cc_n(Flags flag, bool b);
+        void LD_RR_nn(uint8_t* reg1, uint8_t* reg2);
+        void LDD_RR_n(uint8_t* reg1, uint8_t* reg2);
+        void LDH_n_R(uint8_t* reg);
         void LDH_n_A();
         void LDH_A_n();
+        void JP_nn();
         void DI();
 };
