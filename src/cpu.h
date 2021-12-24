@@ -17,9 +17,9 @@ class Cpu
         uint16_t pc = 0x0100; // program counter
 
         // Enums for flag register
-        enum flags {
-            ZERO, SUB, HALF_CARRY, CARRY
-        };
+        typedef enum Flags {
+            CARRY = 0x4, HALF_CARRY, SUB, ZERO
+        } Flags;
 
         // Memory map
         // Rom bank 0. Fixed. 0000 - 3FFF
@@ -32,7 +32,7 @@ class Cpu
         std::vector<uint8_t> vram;
         
         // From cart. Switchable. A000 - BFFF
-        std::vector<uint8_t> ext_ram;
+        std::vector<uint8_t> ext_ram = std::vector<uint8_t>(8192);
         
         // C000 - CFFF
         std::vector<uint8_t> wram_0 = std::vector<uint8_t>(4096);
@@ -60,12 +60,22 @@ class Cpu
         bool execute();
         uint8_t mem(uint16_t address);
         void mem(uint16_t address, uint8_t val);
+        void regdump();
+        void unknown(uint8_t opcode);
+
+        uint8_t flag(Flags flag);
+        void flag(Flags flag, bool val);
+        
 
     public:
         void NOP();
         
         void JP_nn();
+        void JR_NZ_n();
+
         void XOR_a();
+        void DEC_b();
+        void DEC_c();
 
         void LD_HL_nn();
         void LD_B_n();

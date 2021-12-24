@@ -9,6 +9,21 @@
 
 #define CART_TYPE 0x147
 
+/* Cpu::flag
+ * Gets and sets flags. */
+uint8_t Cpu::flag(Flags flag) {
+    uint8_t f = af & 0x00FF;
+    return (f & (1 << flag)) >> flag;
+}
+
+void Cpu::flag(Flags flag, bool val) {
+    uint8_t f = af & 0x00FF;
+    f &= ~(1 << flag);  // set bit to 0
+    f |= (val << flag); // so we can set bit to val
+    af = (af & 0xFF00) | f;
+}
+
+
 /* Cpu::copyRom
  * Copies ROM from .gb file to memory.
  * MBC unimplemented. suuuuper basic.
@@ -18,8 +33,6 @@ void Cpu::copyRom(std::string fname) {
     std::ifstream infile("gba/tetris.gb", std::ios::binary);
     if (!infile.is_open()) {
         std::cout << "ROM could not be opened" << std::endl;
-    } else {
-        std::cout << "ROM opened successfully" << std::endl;
     }
 
     // Copy rom into vector
@@ -42,11 +55,21 @@ void Cpu::copyRom(std::string fname) {
     }
 }
 
+void Cpu::regdump() {
+    std::cout << "af: " << std::hex << (int) af << std::endl;
+    std::cout << "bc: " << std::hex << (int) bc << std::endl;
+    std::cout << "de: " << std::hex << (int) de << std::endl;
+    std::cout << "hl: " << std::hex << (int) hl << std::endl;
+    std::cout << "sp: " << std::hex << (int) sp << std::endl;
+    std::cout << "pc: " << std::hex << (int) pc << std::endl;
+}
+
 /* temp function
  * 
  */
-void unknown(uint8_t opcode) {
+void Cpu::unknown(uint8_t opcode) {
     std::cout << "Unknown opcode found: " << std::hex << (int) opcode << std::endl;
+    regdump();
 }
 
 /* Cpu::mem
@@ -120,19 +143,20 @@ void Cpu::mem(uint16_t address, uint8_t val) {
  */
 bool Cpu::execute() {
     uint8_t opcode = mem(pc);
-    std::cout << "Opcode:" << std::hex << (int) opcode << std::endl;
-
     switch (opcode) {
         case 0x00: NOP();       break;
+        case 0x0D: DEC_c();     break;
+        case 0x05: DEC_b();     break;
+        case 0x20: JR_NZ_n();   break;
         case 0x32: LDD_HL_A();  break;
         case 0x06: LD_B_n();    break;
         case 0x0E: LD_C_n();    break;
         case 0x21: LD_HL_nn();  break;
         case 0xAF: XOR_a();     break;
         case 0xC3: JP_nn();     break;
-        default:   unknown(opcode); return 1;
+        default:   unknown(opcode); return EXIT_FAILURE;
     }
-    return 0;
+    return EXIT_SUCCESS;
 };
 
 // ================= OPCODES ================= //
@@ -151,10 +175,21 @@ void Cpu::NOP() {
  * nn = two byte immediate value. (LS byte first.)
  */
 void Cpu::JP_nn() {
-    uint8_t lsb = mem(pc+1);
-    uint8_t msb = mem(pc+2);
+    uint8_t lsb = mem(++pc);
+    uint8_t msb = mem(++pc);
     pc = (msb << 8) | lsb;
-    std::cout << std::hex << "\t JP_nn jumping to: " << (int) pc << std::endl;
+}
+
+/* JR NZ, n
+ * If zero flag == 0 add n to current address and jump to it
+ */
+void Cpu::JR_NZ_n() {
+    int8_t val = mem(++pc);
+    if (flag(ZERO) == false) {
+        pc += val;
+    } else {
+        pc += 1;
+    }
 }
 
 // ===== 8-BIT ALU =====
@@ -163,9 +198,57 @@ void Cpu::JP_nn() {
  * this xor always sets A to zero so don't even bother w the xor i guess
  */
 void Cpu::XOR_a() {
-    af &= 0x0080;   // Set A to 0 and set flags appropriately
+    af &= 0x00FF;   // Set A to 0
+    flag(ZERO, true);
     pc += 1;
-    std::cout << "\t XOR A: new value of af is " << std::hex << (int) af << std::endl;
+}
+
+/* DEC B
+ * Decrement value in reg B by 1
+ */
+void Cpu::DEC_b() {
+    uint8_t b_prev = (bc & 0xFF00) >> 8;
+    uint8_t b_new = b_prev - 1;
+    bc = (bc & 0x00FF) | (b_new << 8);
+
+    // Set flags
+    flag(SUB, true);
+    if (b_new == 0) {
+        flag(ZERO, true);
+    } else {
+        flag(ZERO, false);
+    }
+    if ((b_prev & 15) + (1 & 15) > 15) {
+        flag(HALF_CARRY, true);
+    } else {
+        flag(HALF_CARRY, false);
+    }
+
+    pc += 1;
+}
+
+/* DEC C
+ * Decrement value in reg C by 1
+ */
+void Cpu::DEC_c() {
+    uint8_t c_prev = (bc & 0x00FF);
+    uint8_t c_new = c_prev - 1;
+    bc = (bc & 0xFF) | c_new;
+
+    // Set flags
+    flag(SUB, true);
+    if (c_new == 0) {
+        flag(ZERO, true);
+    } else {
+        flag(ZERO, false);
+    }
+    if ((c_prev & 15) + (1 & 15) > 15) {
+        flag(HALF_CARRY, true);
+    } else {
+        flag(HALF_CARRY, false);
+    }
+
+    pc += 1;
 }
 
 // ===== LOADS =====
@@ -177,7 +260,6 @@ void Cpu::LD_HL_nn() {
     uint8_t msb = mem(pc+2);
     hl = (msb << 8) | lsb;
     pc += 3;
-    std::cout << "\t HL = " << std::hex << (int) hl << std::endl;
 }
 
 /* LD B, n
@@ -186,7 +268,6 @@ void Cpu::LD_HL_nn() {
 void Cpu::LD_B_n() {
     uint8_t n = mem(pc+1);
     bc = (bc & 0x00FF) | (n << 8);
-    std::cout << "\t BC = " << std::hex << (int) bc << std::endl;
     pc += 2;
 }
 
@@ -196,7 +277,6 @@ void Cpu::LD_B_n() {
 void Cpu::LD_C_n() {
     uint8_t n = mem(pc+1);
     bc = (bc & 0xFF00) | n;
-    std::cout << "\t BC = " << std::hex << (int) bc << std::endl;
     pc += 2;
 }
 
@@ -206,7 +286,6 @@ void Cpu::LD_C_n() {
  */
 void Cpu::LDD_HL_A() {
     uint16_t address = hl;
-    std::cout << std::hex << (int) hl << std::endl;
     uint8_t val = (af & 0xFF00) >> 8;
     mem(address, val);
     hl--;
