@@ -23,20 +23,25 @@ class Cpu
         uint8_t h = 0x01;
         uint8_t l = 0x4D;
         uint16_t sp = 0xFFFE; // stack pointer
-        uint16_t pc = 0x0000; // program counter
+        uint16_t pc = 0x0100; // program counter
 
         uint16_t af() { return (a << 8) | f; }
         uint16_t bc() { return (b << 8) | c; }
         uint16_t de() { return (d << 8) | e; }
         uint16_t hl() { return (h << 8) | l; }
 
-        // Enums for flag register
+        // Enums for CPU flags
         typedef enum Flags {
             CARRY = 0x4, HALF_CARRY, SUB, ZERO
         } Flags;
 
         // Timing
         int cycleCount = 0; // in t-cycles
+
+        bool cpuEnabled = true;
+        uint8_t disableInterrupts = 0;
+        uint8_t enableInterrupts = 0;
+        bool interruptMasterEnable = true;
 
     public:
         bool execute();
@@ -52,6 +57,7 @@ class Cpu
         void setCarrySub(uint8_t a, uint8_t b);
         void setAddFlags(uint8_t a, uint8_t b);
         void setSubFlags(uint8_t a, uint8_t b);
+        void errloop() { while(1){}; }
 
     private:
         // 8-bit loads
@@ -125,7 +131,12 @@ class Cpu
         void JR_n();
         void JR_cc_n(Flags flag, bool cond);
 
-        void errloop() { while(1){}; }
+        // Misc
+        void NOP();
+        void HALT(); // !!!
+        void STOP(); // !!!
+        void DI();
+        void EI();
 
     public:
         Cpu(Bus* bus_) { bus = bus_; }

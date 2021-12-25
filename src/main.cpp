@@ -38,10 +38,19 @@ int main( int argc, char* args[] )
         ++yuh;
         // run CPU
         bool result;
-        result = cpu->execute();        
-        if (result == EXIT_FAILURE) {
-            break;
+        try {
+            result = cpu->execute();        
+            if (result == EXIT_FAILURE) {
+                break;
+                cpu->regdump();
+            } else {
+                cpu->regdump();
+                std::cout << std::endl << std::endl;
+            }
+        } catch (std::out_of_range &oor) {
+            std::cout << "somethin fucked up she outta range" << std::endl;
             cpu->regdump();
+            break;
         }
 
         // run PPU

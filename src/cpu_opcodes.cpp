@@ -10,16 +10,18 @@
 /* Cpu::execute
  * Handles execution of all opcodes */
 bool Cpu::execute() {
+    if (!cpuEnabled) return EXIT_SUCCESS;
     uint8_t opcode = bus->read(pc);
 
     switch (opcode) {
+        case 0x00: NOP();           break;
         case 0x01: LD_R1R2_nn(&b, &c);  break;
         case 0x02: LD_BC_A();       break;
 
         case 0x04: INC_R1(&b);      break;
         case 0x05: DEC_R1(&b);      break;
         case 0x06: LD_R1_n(&b);     break;
-
+        case 0x07: HALT();          break;
         case 0x08: LD_nn_SP();      break;
 
         case 0x0A: LD_A_BC();       break;  // ???
@@ -28,6 +30,7 @@ bool Cpu::execute() {
         case 0x0D: DEC_R1(&c);      break;
         case 0x0E: LD_R1_n(&c);     break;
         
+        case 0x10: STOP();          break; // ???
         case 0x11: LD_R1R2_nn(&d, &e);  break;
         case 0x12: LD_DE_A();       break;
 
@@ -243,17 +246,35 @@ bool Cpu::execute() {
         case 0xF0: LDH_A_n();           break;
         case 0xF1: POP_R1R2(&a, &f);    break;
         case 0xF2: LD_A_C();            break;
+        case 0xF3: DI();                break;
 
         case 0xF5: PUSH_R1R2(&a, &f);   break;
 
         case 0xF9: LD_SP_HL();          break;
         case 0xFA: LD_A_nn();           break;
+        case 0xFB: EI();                break;
 
         case 0xFE: CP_n();              break;
 
         default:
             unknown(opcode);
             return EXIT_FAILURE;
+    }
+
+    // janky di instruction implementation
+    if (disableInterrupts != 0) {
+        --disableInterrupts;
+        if (disableInterrupts == 0) {
+            interruptMasterEnable = 0;
+        }
+    }
+
+    // janky ei instruction implementation
+    if (enableInterrupts != 0) {
+        --enableInterrupts;
+        if (enableInterrupts == 0) {
+            interruptMasterEnable = 1;
+        }
     }
 
     return EXIT_SUCCESS;
@@ -421,6 +442,8 @@ void Cpu::LDD_A_HL() {
  *  Put A into address HL. Decrement HL. */
 void Cpu::LDD_HL_A() {
     uint16_t address = (h << 8) | l;
+    std::cout << "LDD (HL), A writing to: " << std::hex
+              << (int) address << std::endl;
     bus->write(address, a);
 
     // Decrement HL
@@ -974,4 +997,50 @@ void Cpu::JR_cc_n(Flags flag, bool cond) {
         pc += val;
     }
     cycleCount += 8;
+}
+
+// ========== MISCELLANEOUS ==========
+/* 00: NOP
+ * Does nothing. */
+void Cpu::NOP() {
+    ++pc;
+    cycleCount += 4;
+}
+
+/* 07: HALT
+ * Power down CPU til interrupt occurs. */
+void Cpu::HALT() {
+    // !!! INTERRUPT HANDLER HAS NOT BEEN WRITTEN
+    // THIS FUNCTION MAY NEED TO BE MODIFIED WHEN THAT'S DONE
+    cpuEnabled = false;
+    ++pc;
+    cycleCount += 4;
+}
+
+/* 10 00:STOP
+ * Halt CPU and LCD until button pressed. */
+void Cpu::STOP() {
+    // THIS FUNCTION IS JANK
+    pc += 2;
+    cycleCount += 4;
+}
+
+/* F3: DI
+ * Disables interrupts (IME = 0) but NOT immediately.
+ * Interrupts are disabled after instruction after DI is 
+ * executed. */
+void Cpu::DI() {
+    disableInterrupts = 2; // magic number ugh
+    ++pc;
+    cycleCount += 4;
+}
+
+/* FB: EI
+ * Enables interrupts (IME = 0) but NOT immediately.
+ * Interrupts are enabled after instruction after EI is 
+ * executed. */
+void Cpu::EI() {
+    enableInterrupts = 2; // magic number ugh
+    ++pc;
+    cycleCount += 4;
 }
