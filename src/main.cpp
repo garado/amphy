@@ -4,42 +4,53 @@
 #include <iomanip>
 
 #include "cpu.h"
+#include "ppu.h"
 #include "win.h"
+#include "bus.h"
 
 int main( int argc, char* args[] )
 {
-    // Window* win = new Window;
-    Cpu* cpu = new Cpu;
+    Window* win = new Window;
+    Bus* bus = new Bus;
 
-    cpu->copyRom("gba/pkmn.gb");  
-
-    // Infinite CPU loop
-    for (;;) {
-        bool result;
-        try {
-            result = cpu->execute();
-            if (result == EXIT_FAILURE) break;
-        } catch (std::out_of_range& oor) {
-            cpu->regdump();
-            break;
-        }
-    }
-    
-    // // from lazyfoo (need to refactor later)
     // //Start up SDL and create window
     // if( !win->init() ) {
-    //     std::cout << "Failed to initialize!" << std::endl;
+    //     std::cout << "Failed to initialize" << std::endl;
     // } else {
     //     //Load media
     //     if( !win->loadMedia() ) {
-    //         printf( "Failed to load media!\n" );
+    //         printf( "Failed to load media\n" );
     //     } else {
     //         win->applyImg();
     //     }
     // }
 
+
+    Cpu* cpu = new Cpu(bus);
+    Ppu* ppu = new Ppu(bus);
+    bus->copyRom("gba/pkmn.gb");  
+
+    // loop de loop
+    int cycleCount = 0;
+    int cyclesElapsed = 0;
+    for (;;) {
+        // run CPU
+        bool result;
+        result = cpu->execute();        
+        if (result == EXIT_FAILURE) {
+            break;
+            cpu->regdump();
+        }
+
+        // run PPU
+        cyclesElapsed = cpu->getCycles();
+        ppu->execute(cyclesElapsed);
+
+        cycleCount += cyclesElapsed;
+    }
+
     // Free resources and close SDL
-    // win->close();
+    win->close();
 
     return 0;
 }

@@ -5,9 +5,14 @@
 #include <fstream>
 #include <vector>
 
+#include "bus.h"
+
+#ifndef CPU_H
+#define CPU_H
+
 class Cpu 
 {
-    public:
+    private:
         // Internal registers
         uint8_t a = 0x01;
         uint8_t f = 0xB0;
@@ -25,66 +30,45 @@ class Cpu
             CARRY = 0x4, HALF_CARRY, SUB, ZERO
         } Flags;
 
-        // Memory map
-        // Rom bank 0. Fixed. 0000 - 3FFF
-        std::vector<uint8_t> rom_00;
-        
-        // Rom bank 1. Switchable. 4000 - 7FFF
-        std::vector<uint8_t> rom_01;
-        
-        // Video ram. 8000-9FFF
-        std::vector<uint8_t> vram;
-        
-        // From cart. Switchable. A000 - BFFF
-        std::vector<uint8_t> ext_ram = std::vector<uint8_t>(8192);
-        
-        // C000 - CFFF
-        std::vector<uint8_t> wram_0 = std::vector<uint8_t>(4096);
-        
-        // D000 - DFFF
-        std::vector<uint8_t> wram_1 = std::vector<uint8_t>(4096);
-        
-        // Mirror of C000-DFFF. E000-FDFF
-        std::vector<uint8_t> ech_ram = std::vector<uint8_t>(7680);
-        
-        // FE00-FE9F
-        std::vector<uint8_t> oam;
-        
-        // IO registers FF00-FF7F
-        std::vector<uint8_t> io_reg = std::vector<uint8_t>(128);
-        
-        // High ram. FF80-FFFE
-        std::vector<uint8_t> hram = std::vector<uint8_t>(128);
-        
-        // Interrupt enable reg
-        uint8_t int_enable;
-
         // Timing
-        int cycleCount = 0; // in m-cycles, whatever the hell that is
+        int cycleCount = 0; // in t-cycles
 
     public:
-        void copyRom(std::string fname);
         bool execute();
-        uint8_t mem(uint16_t address);
-        void mem(uint16_t address, uint8_t val);
         void regdump();
         void unknown(uint8_t opcode);
-
         uint8_t flag(Flags flag);
         void flag(Flags flag, bool val);
-        
+        int getCycles() { return cycleCount; }
 
     public:
+        // Misc
         void NOP();
+        void DI();
+
+        // 8-bit ALU
         void DEC_n(uint8_t* reg);
         void XOR_n(uint8_t* reg);
-        void LD_R_n(uint8_t* reg);
+        void CP_A_n();
+
+        // Jump
         void JR_cc_n(Flags flag, bool b);
+        void JP_nn();
+
+        // Loads
+        void LD_R_n(uint8_t* reg);
         void LD_RR_nn(uint8_t* reg1, uint8_t* reg2);
         void LDD_RR_n(uint8_t* reg1, uint8_t* reg2);
         void LDH_n_R(uint8_t* reg);
         void LDH_n_A();
         void LDH_A_n();
-        void JP_nn();
-        void DI();
+
+    public:
+        Cpu(Bus* bus_) { bus = bus_; }
+        ~Cpu();
+
+    private:
+        Bus* bus;
 };
+
+#endif

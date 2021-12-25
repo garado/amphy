@@ -10,7 +10,7 @@
 /* Cpu::execute
  * Handles execution of all opcodes */
 bool Cpu::execute() {
-    uint8_t opcode = mem(pc);
+    uint8_t opcode = bus->read(pc);
 
     switch (opcode) {
         case 0x00: NOP();       break;
@@ -18,15 +18,28 @@ bool Cpu::execute() {
         case 0x06: LD_R_n(&b);  break;
         case 0x0D: DEC_n(&c);   break;
         case 0x0E: LD_R_n(&c);  break;
+        case 0x15: DEC_n(&d);   break;
+        case 0x16: LD_R_n(&d);  break;
+        case 0x1E: LD_R_n(&e);  break;
+        case 0x1D: DEC_n(&e);   break;
         case 0x20: JR_cc_n(ZERO, 0);  break;
         case 0x21: LD_RR_nn(&h, &l);  break;
+        case 0x25: DEC_n(&h);   break;
+        case 0x26: LD_R_n(&h);  break;
+        case 0x28: JR_cc_n(ZERO, 1);  break;
+        case 0x2D: DEC_n(&l);   break;
+        case 0x2E: LD_R_n(&l);  break;
+        case 0x30: JR_cc_n(CARRY, 0); break;
         case 0x32: LDD_RR_n(&h, &l);  break;
+        case 0x38: JR_cc_n(CARRY, 1); break;
+        case 0x3D: DEC_n(&a);   break;
         case 0x3E: LD_R_n(&a);  break;
         case 0xAF: XOR_n(&a);   break;
         case 0xC3: JP_nn();     break;
         case 0xE0: LDH_n_A();   break;
         case 0xF0: LDH_A_n();   break; 
         case 0xF3: DI();        break;
+        // case 0xFE: CP_A_n();    break;
         default:   
             unknown(opcode); 
             return EXIT_FAILURE;
@@ -53,6 +66,35 @@ void Cpu::DI() {
 }
 
 // ========== 8-BIT ALU ==========
+
+/* CP A, u8
+ * Compare reg A with 8-bit immediate val n.
+ * Does not affect value in A. */
+void Cpu::CP_A_n() {
+    uint8_t n = bus->read(++pc);
+    uint8_t result = a - n;
+
+    flag(SUB, true);
+    if (result == 0) {
+        flag(ZERO, true);
+    } else {
+        flag(ZERO, false);
+    }
+    if (a < n) { // no borrow
+        flag(CARRY, true);
+    } else {
+        flag(CARRY, false);
+    }
+    // might be wrong
+    if ((a & 15) - (n & 15) < 0) {
+        flag(HALF_CARRY, true);
+    } else {
+        flag(HALF_CARRY, false);
+    }
+
+    cycleCount += 8;
+    ++pc;
+}
 
 /* DEC n
  * Decrement reg*/
@@ -98,8 +140,8 @@ void Cpu::XOR_n(uint8_t* reg) {
  * Jump to address nn.
  * nn = two byte immediate value. (LS byte first.) */
 void Cpu::JP_nn() {
-    uint8_t lsb = mem(++pc);
-    uint8_t msb = mem(++pc);
+    uint8_t lsb = bus->read(++pc);
+    uint8_t msb = bus->read(++pc);
     pc = (msb << 8) | lsb;
     cycleCount += 16;
 }
@@ -108,7 +150,7 @@ void Cpu::JP_nn() {
  * If flag == b, add 8-bit immediate value n to current address
  * and jump to it. Otherwise go to next address as usual. */
 void Cpu::JR_cc_n(Flags f, bool b) {
-    int8_t n = mem(++pc);
+    int8_t n = bus->read(++pc);
     ++pc;
     if (flag(f) == b) {
         pc += (uint16_t) n;
@@ -120,7 +162,7 @@ void Cpu::JR_cc_n(Flags f, bool b) {
 /* LD REG, n
  * Load 8-bit immed operand n into reg */
 void Cpu::LD_R_n(uint8_t* reg) {
-    uint8_t n = mem(++pc);
+    uint8_t n = bus->read(++pc);
     *reg = n;
     ++pc;
 }
@@ -129,8 +171,8 @@ void Cpu::LD_R_n(uint8_t* reg) {
  * Load 2 bytes of immediate data into register pair.
  * First byte of data is the ls byte. */
 void Cpu::LD_RR_nn(uint8_t* reg1, uint8_t* reg2) {
-    *reg2 = mem(++pc);
-    *reg1 = mem(++pc);
+    *reg2 = bus->read(++pc);
+    *reg1 = bus->read(++pc);
     cycleCount += 12;
     ++pc;
 }
@@ -142,7 +184,7 @@ void Cpu::LDD_RR_n(uint8_t* reg1, uint8_t* reg2) {
     // Store contents
     uint16_t address = (*reg1 << 8) | *reg2;
     uint8_t val = a;
-    mem(address, val);
+    bus->write(address, val);
 
     // Decrement reg pair
     address--;
@@ -154,15 +196,15 @@ void Cpu::LDD_RR_n(uint8_t* reg1, uint8_t* reg2) {
 /* E0: LDH (n), A
  * Put A into memory address $FF00 + n. */
 void Cpu::LDH_n_A() {
-    uint16_t address = 0xFF00 | mem(++pc);
-    mem(address, a);
+    uint16_t address = 0xFF00 | bus->read(++pc);
+    bus->write(address, a);
     ++pc;
 }
 
 /* F0: LDH (A), n
  * Put value in memory address $FF00 + n into A. */
 void Cpu::LDH_A_n() {
-    uint16_t address = 0xFF00 | mem(++pc);
-    a = mem(address);
+    uint16_t address = 0xFF00 | bus->read(++pc);
+    a = bus->read(address);
     ++pc;
 }
