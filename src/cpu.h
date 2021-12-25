@@ -25,6 +25,11 @@ class Cpu
         uint16_t sp = 0xFFFE; // stack pointer
         uint16_t pc = 0x0000; // program counter
 
+        uint16_t af() { return (a << 8) | f; }
+        uint16_t bc() { return (b << 8) | c; }
+        uint16_t de() { return (d << 8) | e; }
+        uint16_t hl() { return (h << 8) | l; }
+
         // Enums for flag register
         typedef enum Flags {
             CARRY = 0x4, HALF_CARRY, SUB, ZERO
@@ -41,9 +46,12 @@ class Cpu
         uint8_t getFlag(Flags flag);
         void setFlag(Flags flag);
         void resetFlag(Flags flag);
-        
-        void checkHalfCarry(uint8_t a, uint8_t b);
-        void checkCarry(uint8_t a, uint8_t b);
+        void setHalfCarryAdd(uint8_t a, uint8_t b);
+        void setHalfCarrySub(uint8_t a, uint8_t b);
+        void setCarryAdd(uint8_t a, uint8_t b);
+        void setCarrySub(uint8_t a, uint8_t b);
+        void setAddFlags(uint8_t a, uint8_t b);
+        void setSubFlags(uint8_t a, uint8_t b);
 
     private:
         // 8-bit loads
@@ -88,35 +96,32 @@ class Cpu
         void ADC_A_R1(uint8_t* R1);
         void ADC_A_HL();
         void ADC_A_n();
+        void SUB_R1(uint8_t* R1);
+        void SUB_HL();
+        void SUB_n();
+        void SBC_A_R1(uint8_t* R1);
+        void SBC_A_HL();
+        void AND_R1(uint8_t* R1);   // maybe consider making
+        void AND_HL();              // just 3 functions for
+        void AND_n();               // logical ops?
+        void OR_R1(uint8_t* R1);
+        void OR_HL();
+        void OR_n();
         void XOR_R1(uint8_t* R1);
         void XOR_HL();
         void XOR_n();
+        void CP_R1(uint8_t* R1);
+        void CP_HL();
+        void CP_n();
+        void INC_R1(uint8_t* R1);
+        void INC_HL();
+        void DEC_R1(uint8_t* R1);
+        void DEC_HL();
 
         // Jumps
         void JP_nn();
 
         void errloop() { while(1){}; }
-
-        // OLD!!! AGAIN
-
-        // void LD_RR_nn(uint8_t* reg1, uint8_t* reg2);
-        // void LDD_RR_n(uint8_t* reg1, uint8_t* reg2);
-        // void LDH_n_R(uint8_t* reg);
-        // void LDH_n_A();
-        // void LD_HL_n();
-
-        // // Misc
-        // void NOP();
-        // void DI();
-
-        // // 8-bit ALU
-        // void DEC_n(uint8_t* reg);
-        // void XOR_n(uint8_t* reg);
-        // void CP_A_n();
-
-        // // Jump
-        // void JR_cc_n(Flags flag, bool b);
-        // void JP_nn();
 
     public:
         Cpu(Bus* bus_) { bus = bus_; }

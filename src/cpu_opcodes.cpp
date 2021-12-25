@@ -16,39 +16,56 @@ bool Cpu::execute() {
         case 0x01: LD_R1R2_nn(&b, &c);  break;
         case 0x02: LD_BC_A();       break;
 
+        case 0x04: INC_R1(&b);      break;
+        case 0x05: DEC_R1(&b);      break;
         case 0x06: LD_R1_n(&b);     break;
 
         case 0x08: LD_nn_SP();      break;
 
         case 0x0A: LD_A_BC();       break;  // ???
 
+        case 0x0C: INC_R1(&c);      break;
+        case 0x0D: DEC_R1(&c);      break;
         case 0x0E: LD_R1_n(&c);     break;
         
         case 0x11: LD_R1R2_nn(&d, &e);  break;
         case 0x12: LD_DE_A();       break;
 
+        case 0x14: INC_R1(&d);      break;
+        case 0x15: DEC_R1(&d);      break;
         case 0x16: LD_R1_n(&d);     break;
         
         case 0x1A: LD_A_DE();       break;
 
+        case 0x1C: INC_R1(&e);      break;
+        case 0x1D: DEC_R1(&e);      break;
         case 0x1E: LD_R1_n(&e);     break;
 
         case 0x21: LD_R1R2_nn(&h, &l);  break;
         case 0x22: LDI_A_HL();      break;
         
+        case 0x24: INC_R1(&h);      break;
+        case 0x25: DEC_R1(&h);      break;
         case 0x26: LD_R1_n(&h);     break;
         
         case 0x2A: LDI_A_HL();      break;
 
+        case 0x2C: INC_R1(&l);      break;
+        case 0x2D: DEC_R1(&l);      break;
         case 0x2E: LD_R1_n(&l);     break;
 
         case 0x31: LD_SP_nn();      break;
         case 0x32: LDD_HL_A();      break;
 
+        case 0x34: INC_HL();        break;
+        case 0x35: INC_HL();        break;
         case 0x36: LD_HL_n();       break;
 
         case 0x3A: LDD_A_HL();      break;
 
+        case 0x3C: INC_R1(&a);      break;
+
+        case 0x3D: DEC_R1(&a);      break;
         case 0x3E: LD_A_n();        break;
         
         case 0x40: LD_R1_R2(&b, &b);    break;
@@ -133,7 +150,31 @@ bool Cpu::execute() {
         case 0x8D: ADC_A_R1(&l);        break;
         case 0x8E: ADC_A_HL();          break;
         case 0x8F: ADC_A_R1(&a);        break;
+        case 0x90: SUB_R1(&b);          break;
+        case 0x91: SUB_R1(&c);          break;
+        case 0x92: SUB_R1(&d);          break;
+        case 0x93: SUB_R1(&e);          break;
+        case 0x94: SUB_R1(&h);          break;
+        case 0x95: SUB_R1(&l);          break;
+        case 0x96: SUB_HL();            break;
+        case 0x97: SUB_R1(&a);          break;
+        case 0x98: SBC_A_R1(&b);        break;
+        case 0x99: SBC_A_R1(&c);        break;
+        case 0x9A: SBC_A_R1(&d);        break;
+        case 0x9B: SBC_A_R1(&e);        break;
+        case 0x9C: SBC_A_R1(&h);        break;
+        case 0x9D: SBC_A_R1(&l);        break;
 
+        case 0x9F: SBC_A_R1(&a);        break;
+
+        case 0xA0: AND_R1(&b);          break;
+        case 0xA1: AND_R1(&c);          break;
+        case 0xA2: AND_R1(&d);          break;
+        case 0xA3: AND_R1(&e);          break;
+        case 0xA4: AND_R1(&h);          break;
+        case 0xA5: AND_R1(&l);          break;
+        case 0xA6: AND_HL();            break;
+        case 0xA7: AND_R1(&a);          break;
         case 0xA8: XOR_R1(&b);          break;
         case 0xA9: XOR_R1(&c);          break;
         case 0xAA: XOR_R1(&d);          break;
@@ -142,6 +183,23 @@ bool Cpu::execute() {
         case 0xAD: XOR_R1(&l);          break;
         case 0xAE: XOR_HL();            break;
         case 0xAF: XOR_R1(&a);          break;
+
+        case 0xB0: OR_R1(&b);           break;
+        case 0xB1: OR_R1(&c);           break;
+        case 0xB2: OR_R1(&d);           break;
+        case 0xB3: OR_R1(&e);           break;
+        case 0xB4: OR_R1(&h);           break;
+        case 0xB5: OR_R1(&l);           break;
+        case 0xB6: OR_HL();             break;
+        case 0xB7: OR_R1(&a);           break;
+        case 0xB8: CP_R1(&b);           break;
+        case 0xB9: CP_R1(&c);           break;
+        case 0xBA: CP_R1(&d);           break;
+        case 0xBB: CP_R1(&e);           break;
+        case 0xBC: CP_R1(&h);           break;
+        case 0xBD: CP_R1(&l);           break;
+        case 0xBE: CP_HL();             break;
+        case 0xBF: CP_R1(&a);           break;
 
         case 0xC1: POP_R1R2(&b, &c);    break;
 
@@ -155,12 +213,14 @@ bool Cpu::execute() {
         case 0xD1: POP_R1R2(&d, &e);    break;
 
         case 0xD5: PUSH_R1R2(&d, &e);   break;
+        case 0xD6: SUB_n();             break;
 
         case 0xE0: LDH_n_A();           break;
         case 0xE1: POP_R1R2(&h, &l);    break;
         case 0xE2: LD_C_A();            break;
 
         case 0xE5: PUSH_R1R2(&h, &l);   break;
+        case 0xE6: AND_n();             break;
 
         case 0xEA: LD_nn_A();           break;
 
@@ -168,14 +228,14 @@ bool Cpu::execute() {
 
         case 0xF0: LDH_A_n();           break;
         case 0xF1: POP_R1R2(&a, &f);    break;
-
         case 0xF2: LD_A_C();            break;
 
         case 0xF5: PUSH_R1R2(&a, &f);   break;
 
+        case 0xF9: LD_SP_HL();          break;
         case 0xFA: LD_A_nn();           break;
 
-        case 0xF9: LD_SP_HL();
+        case 0xFE: CP_n();              break;
 
         default:
             unknown(opcode);
@@ -442,13 +502,8 @@ void Cpu::LDHL_SP_n() {
     uint16_t newHL = sp + n;
     h = (newHL & 0xFF00) >> 8;
     l = newHL & 0xFF;
-    
-    // Set flags
+    setAddFlags(sp, n);
     resetFlag(ZERO);
-    resetFlag(SUB);
-    checkHalfCarry(sp, n);
-    checkCarry(sp, n);
-
     ++pc;
     cycleCount += 12;
 }
@@ -490,18 +545,8 @@ void Cpu::POP_R1R2(uint8_t* R1, uint8_t* R2) {
 /*  ADD A, R1
  *  Add R1 to A. */
 void Cpu::ADD_A_R1(uint8_t* R1) {
-    uint8_t a_prev = a;
+    setAddFlags(a, *R1);
     a += *R1;
-
-    if (a == 0) {
-        setFlag(ZERO);
-    } else {
-        resetFlag(ZERO);
-    }
-    resetFlag(SUB);
-    checkHalfCarry(a, *R1);
-    checkCarry(a, *R1);
-
     ++pc;
     cycleCount += 4;
 }
@@ -511,18 +556,8 @@ void Cpu::ADD_A_R1(uint8_t* R1) {
 void Cpu::ADD_A_HL() {
     uint16_t address = (h << 8) | l;
     uint8_t val = bus->read(address);
-    uint8_t a_prev = a;
+    setAddFlags(a, val);
     a += val;
-
-    if (a == 0) {
-        setFlag(ZERO);
-    } else {
-        resetFlag(ZERO);
-    }
-    resetFlag(SUB);
-    checkHalfCarry(a_prev, val);
-    checkCarry(a_prev, val);
-
     ++pc;
     cycleCount += 8;
 }
@@ -531,79 +566,196 @@ void Cpu::ADD_A_HL() {
  *  A = A + 8bit n */
 void Cpu::ADD_A_n() {
     uint8_t val = bus->read(++pc);
-    uint8_t a_prev = a;
+    setAddFlags(a, val);
     a += val;
-
-    if (a == 0) {
-        setFlag(ZERO);
-    } else {
-        resetFlag(ZERO);
-    }
-    resetFlag(SUB);
-    checkHalfCarry(a_prev, val);
-    checkCarry(a_prev, val);
-
     ++pc;
     cycleCount += 8;
 }
 
 /*  ADC A, R1
- *  A = R1 + carry flag */
+ *  A = A + (R1 + carry flag) */
 void Cpu::ADC_A_R1(uint8_t* R1) {
-    uint8_t cy = getFlag(CARRY);
-    a = *R1 + cy;
-
-    if (a == 0) {
-        setFlag(ZERO);
-    } else {
-        resetFlag(ZERO);
-    }
-    resetFlag(SUB);
-    checkHalfCarry(*R1, cy);
-    checkCarry(*R1, cy);
-
+    uint8_t val = *R1 + getFlag(CARRY);
+    setAddFlags(a, val);
+    a += val;
     ++pc;
     cycleCount += 4;
 }
 
 /*  8E: ADC A, (HL)
- *  A = (HL) + carry */
+ *  A = A + ((HL) + carry) */
 void Cpu::ADC_A_HL() {
     uint16_t address = (h << 8) | l;
-    uint8_t val = bus->read(address);
-    uint8_t cy = getFlag(CARRY);
-    a = val + cy;
-
-    if (a == 0) {
-        setFlag(ZERO);
-    } else {
-        resetFlag(ZERO);
-    }
-    resetFlag(SUB);
-    checkHalfCarry(val, cy);
-    checkCarry(val, cy);
-
+    uint8_t val = bus->read(address) + getFlag(CARRY);
+    setAddFlags(a, val);
+    a += val;
     ++pc;
     cycleCount += 8;
 }
 
-// LEFT OFF HERE
 /*  CE: ADC A, n
- *  A = CY + n */
+ *  A = A + (CY + n) */
 void Cpu::ADC_A_n() {
     uint8_t n = bus->read(++pc);
     uint8_t cy = getFlag(CARRY);
-    a = n + cy;
+    uint8_t val = n + cy;
+    setAddFlags(a, val);
+    a += val;
+    ++pc;
+    cycleCount += 8;
+}
 
+/*  SUB R1
+ *  Subtract reg R1 from A. */
+void Cpu::SUB_R1(uint8_t* R1) {
+    setSubFlags(a, *R1);
+    a -= *R1;
+    ++pc;
+    cycleCount += 4;
+}
+
+/*  96: SUB (HL)
+ *  Subtract (HL) from A. */
+void Cpu::SUB_HL() {
+    uint16_t address = (h << 8) | l;
+    uint8_t val = bus->read(address);
+    setSubFlags(a, val);
+    a -= val;
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  D6: SUB n
+ *  Subtract 8bit immed n from A */
+void Cpu::SUB_n() {
+    uint8_t val = bus->read(++pc);
+    setSubFlags(a, val);
+    a -= val;
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  SBC A, R1
+ *  Subtract value of R1 + carry from A. 
+*   A = A - (R1 + CY) */
+void Cpu::SBC_A_R1(uint8_t* R1) {
+    uint8_t val = *R1 + getFlag(CARRY);
+    setSubFlags(a, val);
+    a -= val;
+    ++pc;
+    cycleCount += 4;
+}
+
+/*  SBC A, (HL)
+ *  Subtract value of (HL) + carry from A. 
+ *  A = A - ((HL) + CY) */
+void Cpu::SBC_A_HL() {
+    uint16_t address = (h << 8) | l;
+    uint8_t val = bus->read(address) + getFlag(CARRY);
+    setSubFlags(a, val);
+    a -= val;
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  AND R1
+ *  Logical AND R1 with A, store result in A. */
+void Cpu::AND_R1(uint8_t* R1) {
+    a &= *R1;
     if (a == 0) {
         setFlag(ZERO);
     } else {
         resetFlag(ZERO);
     }
     resetFlag(SUB);
-    checkHalfCarry(n, cy);
-    checkCarry(n, cy);
+    setFlag(HALF_CARRY);
+    resetFlag(CARRY);
+    ++pc;
+    cycleCount += 4;
+}
 
+/*  A6: AND (HL)
+ *  Logical AND (HL) with A, store result in A. */
+void Cpu::AND_HL() {
+    uint16_t address = (h << 8) | l;
+    uint8_t val = bus->read(address);
+    a &= val;
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    setFlag(HALF_CARRY);
+    resetFlag(CARRY);
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  E6: AND n
+ *  Logical AND n with A, store result in A. */
+void Cpu::AND_n() {
+    uint8_t val = bus->read(++pc);
+    a &= val;
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    setFlag(HALF_CARRY);
+    resetFlag(CARRY);
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  OR R1
+ *  Logical OR R1 with A, store result in A. */
+void Cpu::OR_R1(uint8_t* R1) {
+    a |= *R1;
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    resetFlag(HALF_CARRY);
+    resetFlag(CARRY);
+    ++pc;
+    cycleCount += 4;
+}
+
+/*  B6: OR (HL)
+ *  Logical OR (HL) with A, store result in A. */
+void Cpu::OR_HL() {
+    uint16_t address = (h << 8) | l;
+    uint8_t val = bus->read(address);
+    a |= val;
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    resetFlag(HALF_CARRY);
+    resetFlag(CARRY);
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  F6: OR n
+ *  Logical AND n with A, store result in A. */
+void Cpu::OR_n() {
+    uint8_t val = bus->read(++pc);
+    a |= val;
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    resetFlag(HALF_CARRY);
+    resetFlag(CARRY);
     ++pc;
     cycleCount += 8;
 }
@@ -665,7 +817,101 @@ void Cpu::XOR_n() {
     cycleCount += 8;
 }
 
+/*  CP R1
+ *  Compare A with R1.
+ *  To compare, the Game Boy subtracts A - R1, with the result 
+ *  thrown away. If (A-R1) == 0 they are equal. */
+void Cpu::CP_R1(uint8_t* R1) {
+    setSubFlags(a, *R1);
+    ++pc;
+    cycleCount += 4;
+}
 
+/*  BE: CP (HL)
+ *  Compare A with (HL).
+ *  To compare, the Game Boy subtracts A - (HL), with the result 
+ *  thrown away. If (A-(HL)) == 0 they are equal. */
+void Cpu::CP_HL() {
+    uint8_t val = bus->read(hl());
+    setSubFlags(a, val);
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  FE: CP n
+ *  Compare A with n.
+ *  To compare, the Game Boy subtracts A - n, with the result 
+ *  thrown away. If (A-n) == 0 they are equal. */
+void Cpu::CP_n() {
+    uint8_t val = bus->read(++pc);
+    setSubFlags(a, val);
+    ++pc;
+    cycleCount += 8;
+}
+
+/* INC R1
+ * Increment register R1. */
+void Cpu::INC_R1(uint8_t* R1) {
+    setHalfCarryAdd(*R1, 1);
+    (*R1)++;
+    if (*R1 == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    ++pc;
+    cycleCount += 4;
+}
+
+/* 34: INC HL
+ * Increment contents of (HL). */
+void Cpu::INC_HL() {
+    uint8_t val = bus->read(hl());
+    setHalfCarryAdd(val, 1);
+    ++val;
+    bus->write(hl(), val);
+    if (val == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    ++pc;
+    cycleCount += 12;
+}
+
+/* DEC R1
+ * Increment register R1. */
+void Cpu::DEC_R1(uint8_t* R1) {
+    setHalfCarrySub(*R1, 1);
+    --(*R1);
+    if (*R1 == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    setFlag(SUB);
+    ++pc;
+    cycleCount += 4;
+}
+
+/* 35: DEC HL
+ * Increment contents of (HL). */
+void Cpu::DEC_HL() {
+    uint8_t val = bus->read(hl());
+    setHalfCarrySub(val, 1);
+    --val;
+    bus->write(hl(), val);
+    if (val == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    setFlag(SUB);
+    ++pc;
+    cycleCount += 12;
+}
 
 // ========== JUMPS ==========
 /*  C3: JP nn
