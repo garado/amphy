@@ -28,12 +28,14 @@ int main( int argc, char* args[] )
 
     Cpu* cpu = new Cpu(bus);
     Ppu* ppu = new Ppu(bus);
-    bus->copyRom("gba/pkmn.gb");  
+    bus->copyRom("gba/boot.gb");  
 
     // loop de loop
     int cycleCount = 0;
+    int yuh = 0;
     int cyclesElapsed = 0;
     for (;;) {
+        ++yuh;
         // run CPU
         bool result;
         result = cpu->execute();        
@@ -47,6 +49,14 @@ int main( int argc, char* args[] )
         ppu->execute(cyclesElapsed);
 
         cycleCount += cyclesElapsed;
+
+        // if (bus->read(0xFF44) == 0x01) {
+        //     std::cout << "LY incremented, finally" << std::endl;
+        //     std::cout << "instrs executed: " << yuh << std::endl;
+        //     std::cout << "cycles: " << cycleCount << std::endl;
+        //     cpu->regdump();
+        //     // break;
+        // }
     }
 
     // Free resources and close SDL

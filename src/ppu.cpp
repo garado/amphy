@@ -30,17 +30,22 @@ void Ppu::setFlag(StatFlags flag, bool val) {
 /*  Ppu::execute
  *  Emulates the number of cycles passed into the function. */
 void Ppu::execute(uint8_t cyclesToRun) {
-    std::cout << "\tPPU state:" << ppuState << std::endl;
-    for( int i = 0; i < cyclesToRun; ++i) {
-        switch( ppuState ) {
-            case OAM_SCAN:  oam_scan(); break;
-            case VBLANK:    vblank();   break;
-            case DRAW:      draw();     break;
-            case HBLANK:    hblank();   break;
-            default: break;
-        }
-        ++currCycleCount;   
+    cycleCount += cyclesToRun;
+    if (cycleCount >= 456) {
+        cycleCount %= 456;
+        uint8_t LY = bus->read(LY_ADDRESS);
+        bus->write(LY_ADDRESS, ++LY);
     }
+    // std::cout << "PPU state:" << ppuState << std::endl;
+    // for( int i = 0; i < cyclesToRun; ++i) {
+    //     switch( ppuState ) {
+    //         case OAM_SCAN:  oam_scan(); break;
+    //         case VBLANK:    vblank();   break;
+    //         case DRAW:      draw();     break;
+    //         case HBLANK:    hblank();   break;
+    //         default: break;
+    //     }
+    // }
 }
 
 /*  Ppu::oam_scan()
@@ -90,12 +95,13 @@ void Ppu::oam_scan() {
  *  PPU transfers pixels to LCD.
  *  Duration of this mode varies depending on multiple variables. */
 void Ppu::draw() {
+    ++cycleCount;
     // Execute one step of everything every 2 cycles, aka every other cycle
     // So just toggle doCycle flag each cycle.
     doCycle ^= 1;
     if (doCycle) {
         // If this x position has a sprite, call sprite fetch
-        
+
 
         // Else call bg fetch
         bg_fetch();
@@ -103,7 +109,14 @@ void Ppu::draw() {
     
     // Push to LCD
     if (bgFifoPxCount != 0) {
+        bgFifoPxCount--;
+        // didnt actually implement pushing to lcd yet hehe
+    }
 
+    // 
+    if (bgFifo_xPos >= 160) {
+        bgFifo_xPos = 0;    // is this right?
+        ppuState = HBLANK;
     }
 }
 
@@ -123,6 +136,8 @@ void Ppu::bg_fetch() {
 /*  Ppu::bg_fetchTileNo
  *  Fetch and store tile number of tile number to be used */
 void Ppu::bg_fetchTileNo() {
+    // ???
+    ++bgFifo_xPos;
     bgFetchState = FETCH_DATA_LO;
 }
 
@@ -139,8 +154,10 @@ void Ppu::bg_fetchTileDataLo() {
 void Ppu::bg_fetchTileDataHi() {
     if ( isFirstScanlineFetch ) {
         bgFetchState = FETCH_TILE_NO;
+        isFirstScanlineFetch = false;
+    } else {
+        bgFetchState = FETCH_PUSH;
     }
-    isFirstScanlineFetch = false;
 }
 
 /*  Ppu::bg_fetchPush
@@ -155,13 +172,51 @@ void Ppu::bg_fetchPush() {
 }
 
 void Ppu::sprite_fetch() {
-    
+
 }
 
+void Ppu::sprite_fetchTileNo() {
+
+}
+
+void Ppu::sprite_fetchTileDataHi() {
+
+}
+
+void Ppu::sprite_fetchTileDataLo() {
+
+}
+
+void Ppu::sprite_fetchPush() {
+
+}
+
+/*  Ppu::vblank
+ *  This occurs at the end of every frame for 10 lines. */
 void Ppu::vblank() {
-
+    ++vblankCycleCount;
+    uint8_t LY = bus->read(LY_ADDRESS);
+    bus->write(LY_ADDRESS, ++LY);
+    if ( LY == 153 ) {
+        ppuState = OAM_SCAN;
+    }
 }
 
+/*  Ppu::hblank
+ *  Effectively stalls the PPU for 456 t-cycles. */
 void Ppu::hblank() {
+    ++hblankCycleCount;
+    if ( hblankCycleCount >= 456 ) {
+        hblankCycleCount = 0;
 
+        // Determine whether to go to vblank or oam scan.
+        uint8_t LY = bus->read(LY_ADDRESS);
+        if ( LY == 144 ) {
+            ppuState = VBLANK;
+        } else {
+            uint8_t LY = bus->read(LY_ADDRESS);
+            bus->write(LY_ADDRESS, ++LY);
+            ppuState = OAM_SCAN;
+        }
+    }
 }

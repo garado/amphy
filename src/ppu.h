@@ -42,24 +42,27 @@ class Ppu {
             BG_WIN_ENABLE, SPRITE_ENABLE, SPRITE_SIZE, BG_TILEMAP_SEL,
             TILE_DATA_SEL, WIN_DISP_ENABLE, WIN_TILEMAP_SEL, LCD_ENABLE
         } CtrlFlags;
-        
+        // 0x86 0x87
+        // 1000 0110
+        // 1000 0111
+        // 1000 0101
         // LCD status flags
         typedef enum StatFlags {
             PPU_MODE_LSB, PPU_MODE_MSB, COINCIDENCE, MODE_0_STAT_INT_ENABLE,
             MODE_1_STAT_INT_ENABLE, MODE_2_STAT_INT_ENABLE, LYC_LY_STAT_INT_ENABLE 
         } StatFlags;
 
+        int cycleCount = 0;
+
         // These FIFOs store 8 pixels each.
         // 1 pixel = 2 bits, so 16 bits = 8 pixels.
-        int bgFifoPxCount = 0;
+        int bgFifoPxCount = 0; 
+        int bgFifo_xPos = 0;    // x position of current pixel to be drawn
         uint16_t bgTile;
         uint16_t bgFifo;
         int spriteFifoPxCount = 0;
         uint16_t spriteFifo;
         uint16_t spriteTile;
-
-        int lastCycleCount = 0; // in t-cycles
-        int currCycleCount = 0;
 
         // OAM scan
         bool doCycle = true;
@@ -68,6 +71,10 @@ class Ppu {
 
         // Draw
         bool isFirstScanlineFetch = true;
+
+        // Hblank/Vblank
+        int hblankCycleCount;
+        int vblankCycleCount;
 
     public:
         void execute(uint8_t cyclesToRun);
@@ -90,6 +97,10 @@ class Ppu {
         void bg_fetchTileDataLo();
         void bg_fetchPush();
         void sprite_fetch();
+        void sprite_fetchTileNo();
+        void sprite_fetchTileDataHi();
+        void sprite_fetchTileDataLo();
+        void sprite_fetchPush();
 
         Bus* bus;
 

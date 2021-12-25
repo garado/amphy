@@ -23,7 +23,7 @@ class Cpu
         uint8_t h = 0x01;
         uint8_t l = 0x4D;
         uint16_t sp = 0xFFFE; // stack pointer
-        uint16_t pc = 0x0100; // program counter
+        uint16_t pc = 0x0000; // program counter
 
         // Enums for flag register
         typedef enum Flags {

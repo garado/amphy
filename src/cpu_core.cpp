@@ -26,6 +26,8 @@ void Cpu::regdump() {
     std::cout << "sp: " << std::hex << (int) sp << std::endl;
     std::cout << "pc: " << std::hex << (int) pc << std::endl;
     std::cout << "OP: " << std::hex << (int) bus->read(pc) << std::endl;
+
+    std::cout << "LY: " << std::hex << (int) bus->read(0xFF44) << std::endl;
 }
 
 /* temp function

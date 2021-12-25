@@ -49,6 +49,7 @@
         "utility": "cpp",
         "sstream": "cpp",
         "stdexcept": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "stdio.h": "c"
     }
 }

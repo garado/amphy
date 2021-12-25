@@ -39,7 +39,7 @@ bool Cpu::execute() {
         case 0xE0: LDH_n_A();   break;
         case 0xF0: LDH_A_n();   break; 
         case 0xF3: DI();        break;
-        // case 0xFE: CP_A_n();    break;
+        case 0xFE: CP_A_n();    break;
         default:   
             unknown(opcode); 
             return EXIT_FAILURE;
@@ -92,8 +92,8 @@ void Cpu::CP_A_n() {
         flag(HALF_CARRY, false);
     }
 
-    cycleCount += 8;
     ++pc;
+    cycleCount += 8;
 }
 
 /* DEC n
@@ -155,7 +155,7 @@ void Cpu::JR_cc_n(Flags f, bool b) {
     if (flag(f) == b) {
         pc += (uint16_t) n;
     }
-    cycleCount += 8;
+    cycleCount += 12; // or 8?
 }
 
 // ========== LOADS ==========
@@ -165,6 +165,7 @@ void Cpu::LD_R_n(uint8_t* reg) {
     uint8_t n = bus->read(++pc);
     *reg = n;
     ++pc;
+    cycleCount += 8;
 }
 
 /* LD REG, d16
@@ -173,8 +174,8 @@ void Cpu::LD_R_n(uint8_t* reg) {
 void Cpu::LD_RR_nn(uint8_t* reg1, uint8_t* reg2) {
     *reg2 = bus->read(++pc);
     *reg1 = bus->read(++pc);
-    cycleCount += 12;
     ++pc;
+    cycleCount += 12;
 }
 
 /* LDD RR, n
@@ -191,6 +192,7 @@ void Cpu::LDD_RR_n(uint8_t* reg1, uint8_t* reg2) {
     *reg1 = address >> 8;
     *reg2 = (address & 0x00FF);
     ++pc;
+    cycleCount += 8;
 }
 
 /* E0: LDH (n), A
@@ -199,6 +201,7 @@ void Cpu::LDH_n_A() {
     uint16_t address = 0xFF00 | bus->read(++pc);
     bus->write(address, a);
     ++pc;
+    cycleCount += 12;
 }
 
 /* F0: LDH (A), n
@@ -207,4 +210,5 @@ void Cpu::LDH_A_n() {
     uint16_t address = 0xFF00 | bus->read(++pc);
     a = bus->read(address);
     ++pc;
+    cycleCount += 12;
 }
