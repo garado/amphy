@@ -7,15 +7,16 @@
 
 #include "cpu.h"
 
-/* Cpu::flag
- * Gets and sets flags. */
-uint8_t Cpu::flag(Flags flag) {
-    return (f & (1 << flag)) >> flag;
+/*  Cpu::resetFlag()
+ *  Flag = 0. */
+void Cpu::resetFlag(Flags flag) {
+    f &= ~(1 << flag);  // set bit to 0
 }
 
-void Cpu::flag(Flags flag, bool val) {
-    f &= ~(1 << flag);  // set bit to 0
-    f |= (val << flag); // so we can set bit to val
+/*  Cpu::setFlag()
+ *  Flag = 1. */
+void Cpu::setFlag(Flags flag) {
+    f |= (1 << flag);   // set bit to 1
 }
 
 void Cpu::regdump() {
