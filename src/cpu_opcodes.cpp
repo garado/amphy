@@ -116,30 +116,64 @@ bool Cpu::execute() {
         case 0x7E: LD_R1_HL(&a);        break;
         case 0x7F: LD_R1_R2(&a, &a);    break;
 
+        case 0x80: ADD_A_R1(&b);        break;
+        case 0x81: ADD_A_R1(&c);        break;
+        case 0x82: ADD_A_R1(&d);        break;
+        case 0x83: ADD_A_R1(&e);        break;
+        case 0x84: ADD_A_R1(&h);        break;
+        case 0x85: ADD_A_R1(&l);        break;
+        case 0x86: ADD_A_HL();          break;
+
+        case 0x87: ADD_A_R1(&a);        break;
+        case 0x88: ADC_A_R1(&b);        break;
+        case 0x89: ADC_A_R1(&c);        break;
+        case 0x8A: ADC_A_R1(&d);        break;
+        case 0x8B: ADC_A_R1(&e);        break;
+        case 0x8C: ADC_A_R1(&h);        break;
+        case 0x8D: ADC_A_R1(&l);        break;
+        case 0x8E: ADC_A_HL();          break;
+        case 0x8F: ADC_A_R1(&a);        break;
+
+        case 0xA8: XOR_R1(&b);          break;
+        case 0xA9: XOR_R1(&c);          break;
+        case 0xAA: XOR_R1(&d);          break;
+        case 0xAB: XOR_R1(&e);          break;
+        case 0xAC: XOR_R1(&h);          break;
+        case 0xAD: XOR_R1(&l);          break;
+        case 0xAE: XOR_HL();            break;
+        case 0xAF: XOR_R1(&a);          break;
+
         case 0xC1: POP_R1R2(&b, &c);    break;
+
+        case 0xC3: JP_nn();             break;
+
         case 0xC5: PUSH_R1R2(&b, &c);   break;
+        case 0xC6: ADD_A_n();           break;
+
+        case 0xCE: ADC_A_n();           break;
 
         case 0xD1: POP_R1R2(&d, &e);    break;
 
         case 0xD5: PUSH_R1R2(&d, &e);   break;
 
-        case 0xE0: LDH_n_A();       break;
+        case 0xE0: LDH_n_A();           break;
         case 0xE1: POP_R1R2(&h, &l);    break;
-
-        case 0xE2: LD_C_A();        break;
+        case 0xE2: LD_C_A();            break;
 
         case 0xE5: PUSH_R1R2(&h, &l);   break;
 
-        case 0xEA: LD_nn_A();       break;
+        case 0xEA: LD_nn_A();           break;
 
-        case 0xF0: LDH_A_n();       break;
+        case 0xEE: XOR_n();             break;
+
+        case 0xF0: LDH_A_n();           break;
         case 0xF1: POP_R1R2(&a, &f);    break;
 
-        case 0xF2: LD_A_C();        break;
+        case 0xF2: LD_A_C();            break;
 
         case 0xF5: PUSH_R1R2(&a, &f);   break;
 
-        case 0xFA: LD_A_nn();       break;
+        case 0xFA: LD_A_nn();           break;
 
         case 0xF9: LD_SP_HL();
 
@@ -152,115 +186,6 @@ bool Cpu::execute() {
 };
 
 // ================= OPCODES ================= //
-
-// // ===== MISC =====
-// /* 00: NOP
-//  * No operation. */
-// void Cpu::NOP() {
-//     pc += 1;
-//     cycleCount += 4;
-// }
-
-// /* F3: DI
-//  *  Reset IME flag and prohibit maskable interrupts */
-// void Cpu::DI() {
-//     // ???
-//     pc += 1;
-//     cycleCount += 4;
-// }
-
-// // ========== 8-BIT ALU ==========
-
-// /* CP A, u8
-//  * Compare reg A with 8-bit immediate val n.
-//  * Does not affect value in A. */
-// void Cpu::CP_A_n() {
-//     uint8_t n = bus->read(++pc);
-//     uint8_t result = a - n;
-
-//     flag(SUB, true);
-//     if (result == 0) {
-//         flag(ZERO, true);
-//     } else {
-//         flag(ZERO, false);
-//     }
-//     if (a < n) { // no borrow
-//         flag(CARRY, true);
-//     } else {
-//         flag(CARRY, false);
-//     }
-//     // might be wrong
-//     if ((a & 15) - (n & 15) < 0) {
-//         flag(HALF_CARRY, true);
-//     } else {
-//         flag(HALF_CARRY, false);
-//     }
-
-//     ++pc;
-//     cycleCount += 8;
-// }
-
-// /* DEC n
-//  * Decrement reg*/
-// void Cpu::DEC_n(uint8_t* reg) {
-//     uint8_t prev = *reg;
-//      (*reg)--;
-    
-//     flag(SUB, true);
-
-//     if (*reg == 0) {
-//         flag(ZERO, true);
-//     } else {
-//         flag(ZERO, false);
-//     }
-
-//     // might be wrong
-//     if ((prev & 15) - (1 & 15) < 0) {
-//         flag(HALF_CARRY, true);
-//     } else {
-//         flag(HALF_CARRY, false);
-//     }
-
-//     ++pc;
-//     cycleCount += 4;
-// }
-
-// /* XOR n
-//  * a = reg ^ a */
-// void Cpu::XOR_n(uint8_t* reg) {
-//     a = a ^ *reg;
-//     f = 0x00;
-//     if (a == 0) {
-//         flag(ZERO, true);
-//     } else {
-//         flag(ZERO, false);
-//     }
-//     pc += 1;
-//     cycleCount += 4;
-// }
-
-// // ========== JUMPS ==========
-// /* C3: JP nn
-//  * Jump to address nn.
-//  * nn = two byte immediate value. (LS byte first.) */
-// void Cpu::JP_nn() {
-//     uint8_t lsb = bus->read(++pc);
-//     uint8_t msb = bus->read(++pc);
-//     pc = (msb << 8) | lsb;
-//     cycleCount += 16;
-// }
-
-// /* JR cc, n
-//  * If flag == b, add 8-bit immediate value n to current address
-//  * and jump to it. Otherwise go to next address as usual. */
-// void Cpu::JR_cc_n(Flags f, bool b) {
-//     int8_t n = bus->read(++pc);
-//     ++pc;
-//     if (flag(f) == b) {
-//         pc += (uint16_t) n;
-//     }
-//     cycleCount += 12; // or 8?
-// }
 
 // ========== 8-BIT LOADS ==========
 /* LD R1, n
@@ -448,7 +373,7 @@ void Cpu::LDI_A_HL() {
 
 /*  22: LDI (HL), A
  *  Put A into address HL. Decrement HL. */
-void Cpu::LDD_HL_A() {
+void Cpu::LDI_HL_A() {
     uint16_t address = (h << 8) | l;
     bus->write(address, a);
 
@@ -521,19 +446,8 @@ void Cpu::LDHL_SP_n() {
     // Set flags
     resetFlag(ZERO);
     resetFlag(SUB);
-    
-    // mightve done these wrong lol
-    if ( (sp & 0xF) + (n & 0xF) > 0xF) {
-        setFlag(HALF_CARRY);
-    } else {
-        resetFlag(HALF_CARRY);
-    }
-
-    if ( (int) (sp + n) > 255) {
-        setFlag(CARRY);
-    } else {
-        resetFlag(CARRY);
-    }
+    checkHalfCarry(sp, n);
+    checkCarry(sp, n);
 
     ++pc;
     cycleCount += 12;
@@ -571,3 +485,197 @@ void Cpu::POP_R1R2(uint8_t* R1, uint8_t* R2) {
     ++pc;
     cycleCount += 16;
 }
+
+// ========== 8-BIT ALU ==========
+/*  ADD A, R1
+ *  Add R1 to A. */
+void Cpu::ADD_A_R1(uint8_t* R1) {
+    uint8_t a_prev = a;
+    a += *R1;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    checkHalfCarry(a, *R1);
+    checkCarry(a, *R1);
+
+    ++pc;
+    cycleCount += 4;
+}
+
+/*  86: ADD A, (HL)
+ *  A = A + (HL) */
+void Cpu::ADD_A_HL() {
+    uint16_t address = (h << 8) | l;
+    uint8_t val = bus->read(address);
+    uint8_t a_prev = a;
+    a += val;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    checkHalfCarry(a_prev, val);
+    checkCarry(a_prev, val);
+
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  C6: ADD A, n
+ *  A = A + 8bit n */
+void Cpu::ADD_A_n() {
+    uint8_t val = bus->read(++pc);
+    uint8_t a_prev = a;
+    a += val;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    checkHalfCarry(a_prev, val);
+    checkCarry(a_prev, val);
+
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  ADC A, R1
+ *  A = R1 + carry flag */
+void Cpu::ADC_A_R1(uint8_t* R1) {
+    uint8_t cy = getFlag(CARRY);
+    a = *R1 + cy;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    checkHalfCarry(*R1, cy);
+    checkCarry(*R1, cy);
+
+    ++pc;
+    cycleCount += 4;
+}
+
+/*  8E: ADC A, (HL)
+ *  A = (HL) + carry */
+void Cpu::ADC_A_HL() {
+    uint16_t address = (h << 8) | l;
+    uint8_t val = bus->read(address);
+    uint8_t cy = getFlag(CARRY);
+    a = val + cy;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    checkHalfCarry(val, cy);
+    checkCarry(val, cy);
+
+    ++pc;
+    cycleCount += 8;
+}
+
+// LEFT OFF HERE
+/*  CE: ADC A, n
+ *  A = CY + n */
+void Cpu::ADC_A_n() {
+    uint8_t n = bus->read(++pc);
+    uint8_t cy = getFlag(CARRY);
+    a = n + cy;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    checkHalfCarry(n, cy);
+    checkCarry(n, cy);
+
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  XOR R1
+ *  A ^= R1 */
+void Cpu::XOR_R1(uint8_t* R1) {
+    a ^= *R1;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    resetFlag(CARRY);
+    resetFlag(HALF_CARRY);
+
+    ++pc;
+    cycleCount += 4;
+}
+
+/*  AE: XOR (HL)
+ *  A ^= (HL) */
+void Cpu::XOR_HL() {
+    uint16_t address = (h << 8) | l;
+    uint8_t val = bus->read(address);
+    a ^= val;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    resetFlag(CARRY);
+    resetFlag(HALF_CARRY);
+
+    ++pc;
+    cycleCount += 8;
+}
+
+/*  EE: XOR n
+ *  A ^= n */
+void Cpu::XOR_n() {
+    uint8_t val = bus->read(++pc);
+    a ^= val;
+
+    if (a == 0) {
+        setFlag(ZERO);
+    } else {
+        resetFlag(ZERO);
+    }
+    resetFlag(SUB);
+    resetFlag(CARRY);
+    resetFlag(HALF_CARRY);
+
+    ++pc;
+    cycleCount += 8;
+}
+
+
+
+// ========== JUMPS ==========
+/*  C3: JP nn
+ *  Jump to address nn */
+void Cpu::JP_nn() {
+    uint8_t lsb = bus->read(++pc);
+    uint8_t msb = bus->read(++pc);
+    pc = (msb << 8) | lsb;
+    cycleCount += 12;
+}
+
+
+// ON PAGE 81 OF MANUAL

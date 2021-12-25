@@ -19,6 +19,26 @@ void Cpu::setFlag(Flags flag) {
     f |= (1 << flag);   // set bit to 1
 }
 
+uint8_t Cpu::getFlag(Flags flag) {
+    return (f >> flag) & 0x1;
+}
+
+void Cpu::checkHalfCarry(uint8_t a, uint8_t b) {
+    if ( (a & 0xF) + (b & 0xF) > 0xF) {
+        setFlag(HALF_CARRY);
+    } else {
+        resetFlag(HALF_CARRY);
+    }
+}
+
+void Cpu::checkCarry(uint8_t a, uint8_t b) {
+    if ( (int) (a + b) > 255) {
+        setFlag(CARRY);
+    } else {
+        resetFlag(CARRY);
+    }
+}
+
 void Cpu::regdump() {
     std::cout << "af: " << std::hex << (int) a << (int) f << std::endl;
     std::cout << "bc: " << std::hex << (int) b << (int) c << std::endl;

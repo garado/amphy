@@ -28,7 +28,7 @@ int main( int argc, char* args[] )
 
     Cpu* cpu = new Cpu(bus);
     Ppu* ppu = new Ppu(bus);
-    bus->copyRom("gba/boot.gb");  
+    bus->copyRom("gba/testrom-06-ld r,r.gb");  
 
     // loop de loop
     int cycleCount = 0;
@@ -57,6 +57,13 @@ int main( int argc, char* args[] )
         //     cpu->regdump();
         //     // break;
         // }
+
+        // blarggs test - serial output
+        if (bus->read(0xFF02) == 0x81) {
+            char c = bus->read(0xFF01);
+            printf("%c", c);
+            bus->write(0xFF02, 0);
+        }
     }
 
     // Free resources and close SDL

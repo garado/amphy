@@ -38,10 +38,14 @@ class Cpu
         void regdump();
         void unknown(uint8_t opcode);
         int getCycles() { return cycleCount; }
+        uint8_t getFlag(Flags flag);
         void setFlag(Flags flag);
         void resetFlag(Flags flag);
+        
+        void checkHalfCarry(uint8_t a, uint8_t b);
+        void checkCarry(uint8_t a, uint8_t b);
 
-    public:
+    private:
         // 8-bit loads
         void LD_R1_n(uint8_t* reg);
         void LD_R1_R2(uint8_t* reg1, uint8_t* reg2);
@@ -76,6 +80,20 @@ class Cpu
         void LD_nn_SP();
         void PUSH_R1R2(uint8_t* R1, uint8_t* R2);
         void POP_R1R2(uint8_t* R1, uint8_t* R2);
+
+        // 8-bit ALU
+        void ADD_A_R1(uint8_t* R1);
+        void ADD_A_HL();
+        void ADD_A_n();
+        void ADC_A_R1(uint8_t* R1);
+        void ADC_A_HL();
+        void ADC_A_n();
+        void XOR_R1(uint8_t* R1);
+        void XOR_HL();
+        void XOR_n();
+
+        // Jumps
+        void JP_nn();
 
         void errloop() { while(1){}; }
 
