@@ -63,7 +63,6 @@ void Cpu::setCarrySub(uint8_t a, uint8_t b) {
     }
 }
 
-
 /*  Cpu::setAddFlags
  *  Sets zero, sub, half carry, and carry flags for addition */
 void Cpu::setAddFlags(uint8_t a, uint8_t b) {

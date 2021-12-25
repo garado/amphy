@@ -120,6 +120,10 @@ class Cpu
 
         // Jumps
         void JP_nn();
+        void JP_cc_nn(Flags flag, bool cond);
+        void JP_HL();
+        void JR_n();
+        void JR_cc_n(Flags flag, bool cond);
 
         void errloop() { while(1){}; }
 

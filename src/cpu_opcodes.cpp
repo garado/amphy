@@ -35,18 +35,23 @@ bool Cpu::execute() {
         case 0x15: DEC_R1(&d);      break;
         case 0x16: LD_R1_n(&d);     break;
         
+        case 0x18: JR_n();          break;
+
         case 0x1A: LD_A_DE();       break;
 
         case 0x1C: INC_R1(&e);      break;
         case 0x1D: DEC_R1(&e);      break;
         case 0x1E: LD_R1_n(&e);     break;
 
+        case 0x20: JR_cc_n(ZERO, 0);    break;
         case 0x21: LD_R1R2_nn(&h, &l);  break;
         case 0x22: LDI_A_HL();      break;
         
         case 0x24: INC_R1(&h);      break;
         case 0x25: DEC_R1(&h);      break;
         case 0x26: LD_R1_n(&h);     break;
+
+        case 0x28: JR_cc_n(ZERO, 1);    break;
         
         case 0x2A: LDI_A_HL();      break;
 
@@ -54,12 +59,15 @@ bool Cpu::execute() {
         case 0x2D: DEC_R1(&l);      break;
         case 0x2E: LD_R1_n(&l);     break;
 
+        case 0x30: JR_cc_n(CARRY, 0);    break;
         case 0x31: LD_SP_nn();      break;
         case 0x32: LDD_HL_A();      break;
 
         case 0x34: INC_HL();        break;
         case 0x35: INC_HL();        break;
         case 0x36: LD_HL_n();       break;
+
+        case 0x38: JR_cc_n(CARRY, 1);    break;
 
         case 0x3A: LDD_A_HL();      break;
 
@@ -202,18 +210,23 @@ bool Cpu::execute() {
         case 0xBF: CP_R1(&a);           break;
 
         case 0xC1: POP_R1R2(&b, &c);    break;
-
+        case 0xC2: JP_cc_nn(ZERO, 0);   break;
         case 0xC3: JP_nn();             break;
 
         case 0xC5: PUSH_R1R2(&b, &c);   break;
         case 0xC6: ADD_A_n();           break;
 
+        case 0xCA: JP_cc_nn(ZERO, 1);   break;
+
         case 0xCE: ADC_A_n();           break;
 
         case 0xD1: POP_R1R2(&d, &e);    break;
+        case 0xD2: JP_cc_nn(CARRY, 0);  break;
 
         case 0xD5: PUSH_R1R2(&d, &e);   break;
         case 0xD6: SUB_n();             break;
+
+        case 0xDA: JP_cc_nn(CARRY, 1);  break;
 
         case 0xE0: LDH_n_A();           break;
         case 0xE1: POP_R1R2(&h, &l);    break;
@@ -222,6 +235,7 @@ bool Cpu::execute() {
         case 0xE5: PUSH_R1R2(&h, &l);   break;
         case 0xE6: AND_n();             break;
 
+        case 0xE9: JP_HL();             break;
         case 0xEA: LD_nn_A();           break;
 
         case 0xEE: XOR_n();             break;
@@ -923,5 +937,41 @@ void Cpu::JP_nn() {
     cycleCount += 12;
 }
 
+/* JP cc, nn
+ * Jump to address nn if flag == condition */
+void Cpu::JP_cc_nn(Flags flag, bool cond) {
+    uint8_t lsb = bus->read(++pc);
+    uint8_t msb = bus->read(++pc);
+    uint8_t address = (msb << 8) | lsb;
+    ++pc;
+    if (flag == cond) {
+        pc = address;
+    }
+    cycleCount += 12;
+}
 
-// ON PAGE 81 OF MANUAL
+/* E9: JP (HL)
+ * Jump to address (HL). */
+void Cpu::JP_HL() {
+    pc = bus->read(hl());
+    cycleCount += 4;
+}
+
+/* 18: JR n
+ * Add n to current pc. */
+void Cpu::JR_n() {
+    uint8_t val = bus->read(++pc);
+    pc += val;
+    cycleCount += 8;
+}
+
+/* JR cc, n
+ * Add n to current address if flag == condition */
+void Cpu::JR_cc_n(Flags flag, bool cond) {
+    uint8_t val = bus->read(++pc);
+    ++pc;
+    if (flag == cond) {
+        pc += val;
+    }
+    cycleCount += 8;
+}
