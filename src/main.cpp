@@ -3,7 +3,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "cpu.h"
+#include "cpu/cpu.h"
 #include "ppu.h"
 #include "win.h"
 #include "bus.h"
@@ -39,13 +39,15 @@ int main( int argc, char* args[] )
         // run CPU
         bool result;
         try {
-            result = cpu->execute();        
+            uint8_t cyclesElapsed = cpu->execute();
+            cpu->addCycles(cyclesElapsed);
+            
             if (result == EXIT_FAILURE) {
                 break;
                 cpu->regdump();
             } else {
-                cpu->regdump();
-                std::cout << std::endl << std::endl;
+                //cpu->regdump();
+                //std::cout << std::endl << std::endl;
             }
         } catch (std::out_of_range &oor) {
             std::cout << "somethin fucked up she outta range" << std::endl;
@@ -54,11 +56,7 @@ int main( int argc, char* args[] )
         }
 
         // run PPU
-        cyclesElapsed = cpu->getCycles();
         ppu->execute(cyclesElapsed);
-
-        cycleCount += cyclesElapsed;
-
         // if (bus->read(0xFF44) == 0x01) {
         //     std::cout << "LY incremented, finally" << std::endl;
         //     std::cout << "instrs executed: " << yuh << std::endl;
