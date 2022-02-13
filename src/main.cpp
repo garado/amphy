@@ -13,18 +13,17 @@ int main( int argc, char* args[] )
     Window* win = new Window;
     Bus* bus = new Bus;
 
-    // //Start up SDL and create window
-    // if( !win->init() ) {
-    //     std::cout << "Failed to initialize" << std::endl;
-    // } else {
-    //     //Load media
-    //     if( !win->loadMedia() ) {
-    //         printf( "Failed to load media\n" );
-    //     } else {
-    //         win->applyImg();
-    //     }
-    // }
-
+    //Start up SDL and create window
+    if( !win->init() ) {
+        std::cout << "Failed to initialize" << std::endl;
+    } else {
+        //Load media
+        if( !win->loadMedia() ) {
+            printf( "Failed to load media\n" );
+        } else {
+            win->applyImg();
+        }
+    }
 
     Cpu* cpu = new Cpu(bus);
     Ppu* ppu = new Ppu(bus);

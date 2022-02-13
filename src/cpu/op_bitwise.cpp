@@ -298,15 +298,3 @@ uint8_t Cpu::XOR_A_atHL() {
     ++pc;
     return 8;
 }
-
-uint8_t Cpu::XOR_A_u8() {
-    uint16_t address = (h << 8) | l;
-    uint8_t val = bus->read(address);
-    a ^= val;
-    assignFlag(ZERO, (a==0));
-    assignFlag(SUB, 0);
-    assignFlag(HALF_CARRY, 0);
-    assignFlag(CARRY, 0);
-    ++pc;
-    return 8;
-}

@@ -169,6 +169,13 @@ uint8_t Cpu::HALT() {
     return 4;
 }
 
+/* 27: DAA
+ * Tbh I do not understand wtf this does */
+ uint8_t Cpu::DAA() {
+    ++pc;
+    return 4;
+ }
+
 /* 10 00:STOP
  * Halt CPU and LCD until button pressed. */
 uint8_t Cpu::STOP() {
@@ -198,6 +205,36 @@ uint8_t Cpu::EI() {
 }
 
 /* ========== RETURNS ========== */
+/* C0: RET_NZ
+ * If Z flag is 0, pop address off stack and jump to it*/
+ uint8_t Cpu::RET_NZ() {
+    bool flag = getFlag(ZERO);
+    if (flag == 0) {
+        uint8_t lsb = bus->read(sp++);
+        uint8_t msb = bus->read(sp++);
+        pc = (msb << 8) | lsb;
+        return 20;
+    } else {
+        ++pc;
+        return 20;
+    }
+ }
+
+ /* C8: RET_Z
+ * If Z flag is 1, pop address off stack and jump to it*/
+ uint8_t Cpu::RET_Z() {
+    bool flag = getFlag(ZERO);
+    if (flag == 1) {
+        uint8_t lsb = bus->read(sp++);
+        uint8_t msb = bus->read(sp++);
+        pc = (msb << 8) | lsb;
+        return 20;
+    } else {
+        ++pc;
+        return 20;
+    }
+ }
+
 /* C9: RET
  * Pop address off stack and jump to it*/
 uint8_t Cpu::RET() {
@@ -218,41 +255,129 @@ uint8_t Cpu::RETI() {
     return 16;
 }
 
-uint8_t Cpu::RET_Z() {
+/* D0: RET_NC
+ * If Carry flag is 0, pop address off stack and jump to it*/
+ uint8_t Cpu::RET_NC() {
+    bool flag = getFlag(CARRY);
+    if (flag == 0) {
+        uint8_t lsb = bus->read(sp++);
+        uint8_t msb = bus->read(sp++);
+        pc = (msb << 8) | lsb;
+        return 20;
+    } else {
+        ++pc;
+        return 20;
+    }
+ }
 
-}
-
-uint8_t Cpu::RET_C() {
-
-}
-
-uint8_t Cpu::RET_NZ() {
-
-}
-
-uint8_t Cpu::RET_NC() {
-
-}
+ /* D8: RET_C
+ * If Z flag is 1, pop address off stack and jump to it*/
+ uint8_t Cpu::RET_C() {
+    bool flag = getFlag(CARRY);
+    if (flag == 1) {
+        uint8_t lsb = bus->read(sp++);
+        uint8_t msb = bus->read(sp++);
+        pc = (msb << 8) | lsb;
+        return 20;
+    } else {
+        ++pc;
+        return 20;
+    }
+ }
 
 /* ========== CALLS ========== */
-uint8_t Cpu::CALL_Z_u16() {
-
-}
-
+/* C4: CALL NZ, u16
+ * If Z == 0, push PC to stack and call  */
 uint8_t Cpu::CALL_NZ_u16() {
+    bool flag = getFlag(ZERO);
+    if (flag == 0) {
+        uint8_t addr = pc + 1;      // push
+        uint8_t msb = addr >> 8;
+        uint8_t lsb = addr & 0xFF;
+        bus->write(--sp, msb);
+        bus->write(--sp, lsb);
 
+        uint16_t u16 = bus->read(++pc); // new pc
+        pc = u16;
+        return 24;
+    } else {
+        pc += 2;
+        return 12;
+    }
 }
 
+/* CC: CALL Z, u16
+ * If Z == 1, push PC to stack and call  */
+uint8_t Cpu::CALL_Z_u16() {
+    bool flag = getFlag(ZERO);
+    if (flag == 1) {
+        uint8_t addr = pc + 1;      // push
+        uint8_t msb = addr >> 8;
+        uint8_t lsb = addr & 0xFF;
+        bus->write(--sp, msb);
+        bus->write(--sp, lsb);
+
+        uint16_t u16 = bus->read(++pc); // new pc
+        pc = u16;
+        return 24;
+    } else {
+        pc += 2;
+        return 12;
+    }
+}
+
+/* CD: CALL u16
+ * Push PC+1 to stack and jump to address  */
 uint8_t Cpu::CALL_u16() {
+    uint8_t addr = pc + 1;      // push
+    uint8_t msb = addr >> 8;
+    uint8_t lsb = addr & 0xFF;
+    bus->write(--sp, msb);
+    bus->write(--sp, lsb);
 
+    uint16_t u16 = bus->read(++pc); // new pc
+    pc = u16;
+    return 24;
 }
 
-uint8_t Cpu::CALL_C_u16() {
-
-}
-
+/* D4: CALL NC, u16
+ * If Carry == 0, push PC to stack and call  */
 uint8_t Cpu::CALL_NC_u16() {
+    bool flag = getFlag(CARRY);
+    if (flag == 0) {
+        uint8_t addr = pc + 1;      // push
+        uint8_t msb = addr >> 8;
+        uint8_t lsb = addr & 0xFF;
+        bus->write(--sp, msb);
+        bus->write(--sp, lsb);
 
+        uint16_t u16 = bus->read(++pc); // new pc
+        pc = u16;
+        return 24;
+    } else {
+        pc += 2;
+        return 12;
+    }
+}
+
+/* DC: CALL C, u16
+ * If Carry == 1, push PC to stack and call  */
+uint8_t Cpu::CALL_C_u16() {
+    bool flag = getFlag(CARRY);
+    if (flag == 1) {
+        uint8_t addr = pc + 1;      // push
+        uint8_t msb = addr >> 8;
+        uint8_t lsb = addr & 0xFF;
+        bus->write(--sp, msb);
+        bus->write(--sp, lsb);
+
+        uint16_t u16 = bus->read(++pc); // new pc
+        pc = u16;
+        return 24;
+    } else {
+        pc += 2;
+        return 12;
+    }
 }
 
 /* ========== RESTARTS ========== */

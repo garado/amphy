@@ -494,15 +494,6 @@ uint8_t Cpu::LD_A_atDE() {
     return 8;
 }
 
-/* 06: LD B, u8
- * Load 8-bit immed operand u8 into B */
-uint8_t Cpu::LD_B_u8() {
-    uint8_t u8 = bus->read(++pc);
-    b = u8;
-    ++pc;
-    return 8;
-}
-
 /*  E0: LDH (n), A
  *  Put A into address $FF00 + n; */
 uint8_t Cpu::LDH_atu8_A() {
@@ -608,7 +599,7 @@ uint8_t Cpu::LD_HL_SP_i8() {
     h = (newHL & 0xFF00) >> 8;
     l = newHL & 0xFF;
     setAddFlags(sp, n);
-    resetFlag(ZERO);
+    assignFlag(ZERO, 0);
     ++pc;
     return 12;
 }

@@ -17,7 +17,7 @@ uint8_t Cpu::RLCA() {
 }
 
 /* 0F: Rotate A right. Old bit 0 to CY. */
-uint8_t Cpu::RLCA() {
+uint8_t Cpu::RRCA() {
     uint8_t old0 = a & 0x1;
     a >> 1;
     a |= (old0 << 7);
@@ -48,7 +48,7 @@ uint8_t Cpu::RLA() {
 /* 1F: RRA
  * Combine cy and a to make a 9-bit number, with cy as msb
  * then rotate that right */
-uint8_t Cpu::RLA() {
+uint8_t Cpu::RRA() {
     uint8_t oldCy = getFlag(CARRY);
     uint8_t old0 = a & 0x1;
     a >> 1;

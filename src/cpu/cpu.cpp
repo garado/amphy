@@ -21,7 +21,7 @@ bool Cpu::getFlag(CpuFlags flag) {
 /* Cpu::setHalfCarryAdd
  * Set half carry flag for addition. */
 void Cpu::setHalfCarryAdd(uint8_t a, uint8_t b) {
-    bool val = (a & 0xF) + (b & 0xF) > 0xF);
+    bool val = (a & 0xF) + (b & 0xF) > 0xF;
     assignFlag(HALF_CARRY, val);
 }
 
@@ -35,7 +35,7 @@ void Cpu::setCarryAdd(uint8_t a, uint8_t b) {
 /* Cpu::setHalfCarrySub
  * Set half carry flag for subtraction. */
 void Cpu::setHalfCarrySub(uint8_t a, uint8_t b) {
-    bool val = (a & 0xF) + (b & 0xF) > 0xF);
+    bool val = (a & 0xF) + (b & 0xF) > 0xF;
     assignFlag(HALF_CARRY, val);
 }
 
@@ -69,7 +69,7 @@ void Cpu::setSubFlags(uint8_t a, uint8_t b) {
 /* Cpu::setHalfCarryAdd
  * Set half carry flag for addition. */
 void Cpu::setHalfCarryAdd(uint16_t a, uint16_t b) {
-    bool val = (a & 0xF) + (b & 0xF) > 0xF);
+    bool val = ((a & 0xF) + (b & 0xF)) > 0xF;
     assignFlag(HALF_CARRY, val);
 }
 
@@ -83,7 +83,7 @@ void Cpu::setCarryAdd(uint16_t a, uint16_t b) {
 /* Cpu::setHalfCarrySub
  * Set half carry flag for subtraction. */
 void Cpu::setHalfCarrySub(uint16_t a, uint16_t b) {
-    bool val = (a & 0xF) + (b & 0xF) > 0xF);
+    bool val = (a & 0xF) + (b & 0xF) > 0xF;
     assignFlag(HALF_CARRY, val);
 }
 
@@ -129,13 +129,13 @@ void Cpu::regdump() {
 bool Cpu::execute() {
     if (!cpuEnabled) return EXIT_SUCCESS;
     uint8_t op = bus->read(pc);
-    uint8_t cyclesElapsed = (this->*opcode[op])();
-    
+    uint8_t cyclesElapsed = (this->*opcodes[op])();
+
     // janky di instruction implementation
     if (disableInterrupts != 0) {
         --disableInterrupts;
         if (disableInterrupts == 0) {
-            interruptMasterEnable = 0;
+            ime = 0;
         }
     }
 
@@ -143,7 +143,7 @@ bool Cpu::execute() {
     if (enableInterrupts != 0) {
         --enableInterrupts;
         if (enableInterrupts == 0) {
-            interruptMasterEnable = 1;
+            ime = 1;
         }
     }
 
