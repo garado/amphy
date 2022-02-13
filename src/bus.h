@@ -49,4 +49,4 @@ class Bus
         void copyRom(std::string fname);
 };
 
-#endif BUS_H
+#endif
