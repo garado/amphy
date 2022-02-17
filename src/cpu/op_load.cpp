@@ -550,8 +550,8 @@ uint8_t Cpu::LDD_A_atHL() {
  *  Put A into address HL. Decrement HL. */
 uint8_t Cpu::LDD_atHL_A() {
     uint16_t address = (h << 8) | l;
-    std::cout << "LDD (HL), A writing to: " << std::hex
-              << (int) address << std::endl;
+    // std::cout << "LDD (HL), A writing to: " << std::hex
+            //   << (int) address << std::endl;
     bus->write(address, a);
 
     // Decrement HL

@@ -1,11 +1,14 @@
 
+#include <iomanip>
 #include <stdio.h>
+#include <string.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
 
 #include "cpu.h"
+#include "../utils/debug.h"
 
 /* Cpu::assignFlag
  * Assign an f-register flag to a value. */
@@ -114,21 +117,34 @@ void Cpu::setSubFlags(uint16_t a, uint16_t b) {
     setCarrySub(a, b);
 }
 
-void Cpu::regdump() {
-    std::cout << "af: " << std::hex << (int) a << (int) f << std::endl;
-    std::cout << "bc: " << std::hex << (int) b << (int) c << std::endl;
-    std::cout << "de: " << std::hex << (int) d << (int) e << std::endl;
-    std::cout << "hl: " << std::hex << (int) h << (int) l << std::endl;
-    std::cout << "sp: " << std::hex << (int) sp << std::endl;
-    std::cout << "pc: " << std::hex << (int) pc << std::endl;
-    std::cout << "OP: " << std::hex << (int) bus->read(pc) << std::endl;
-}
-
 /* Cpu::execute
  * Handles execution of all opcodes */
 bool Cpu::execute() {
     if (!cpuEnabled) return EXIT_SUCCESS;
-    uint8_t op = bus->read(pc);
+    
+    op = bus->read(pc);
+    // std::cout << "cpu::execute - prestep" << std::endl;
+    // debugger->step();
+    // std::cout << "cpu::execute - poststep" << std::endl;
+
+    // // debug: wait for keypress before advancing
+    // // press enter for next cycle
+    // if (numCycles == 0 && bkpt != 0) {
+    //     if (pc == bkpt) {
+    //         debugger();
+    //     }
+    // } else if (numCycles == 0) {
+    //     debugger();
+    // } else {
+    //     --numCycles;
+    // }
+
+    // if (numCycles == 0 && bkpt == 1) {
+    //     debugger(); 
+    // } else {
+    //     --numCycles;
+    // }
+
     uint8_t cyclesElapsed = (this->*opcodes[op])();
 
     // janky di instruction implementation

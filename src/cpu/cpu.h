@@ -10,6 +10,8 @@
 #ifndef CPU_H
 #define CPU_H
 
+class Debugger;
+
 class Cpu 
 {
     private:
@@ -22,13 +24,9 @@ class Cpu
         uint8_t e = 0xD8;
         uint8_t h = 0x01;
         uint8_t l = 0x4D;
+        uint8_t op = 0;       // opcode
         uint16_t sp = 0xFFFE; // stack pointer
         uint16_t pc = 0x0100; // program counter
-
-        uint16_t af() { return (a << 8) | f; }
-        uint16_t bc() { return (b << 8) | c; }
-        uint16_t de() { return (d << 8) | e; }
-        uint16_t hl() { return (h << 8) | l; }
 
         // Enums for reg F flags
         typedef enum CpuFlags {
@@ -46,7 +44,6 @@ class Cpu
     public:
         // Array of function pointers to opcodes.
         typedef uint8_t (Cpu::*Opcode)();
-
         Opcode opcodes[256] = { 
         //  +0                +1                +2                +3          +4           +5         +6          +7          +8           +9          +A          +B         +C          +D          +E          +F
             &Cpu::NOP,        &Cpu::LD_BC_u16,  &Cpu::LD_atBC_A,  &Cpu::INC_BC,     &Cpu::INC_B,       &Cpu::DEC_B,     &Cpu::LD_B_u8,    &Cpu::RLCA,       &Cpu::LD_atu16_SP, &Cpu::ADD_HL_BC,  &Cpu::LD_A_atBC,  &Cpu::DEC_BC,    &Cpu::INC_C,      &Cpu::DEC_C,      &Cpu::LD_C_u8,    &Cpu::RRCA,       // 00+
@@ -350,14 +347,6 @@ class Cpu
         uint8_t EI();
         uint8_t DAA();
 
-    public:
-        bool execute();
-        void regdump();
-        bool getFlag(CpuFlags flag);
-        void assignFlag(CpuFlags flag, bool val);
-        void unknown(uint8_t opcode);
-        void addCycles(uint8_t cycles) { cycleCount += cycles; }
-        uint8_t getCycles() { return cycleCount; }
         void setHalfCarryAdd(uint8_t a, uint8_t b);
         void setHalfCarrySub(uint8_t a, uint8_t b);
         void setCarryAdd(uint8_t a, uint8_t b);
@@ -373,7 +362,24 @@ class Cpu
         void setSubFlags(uint16_t a, uint16_t b);
 
     public:
-        Cpu(Bus* bus_) { 
+        bool execute();
+        bool getFlag(CpuFlags flag);
+        void assignFlag(CpuFlags flag, bool val);
+        void unknown(uint8_t opcode);
+        void addCycles(uint8_t cycles) { cycleCount += cycles; }
+        uint8_t getCycles() { return cycleCount; }
+
+        uint16_t af() const { return (a << 8) | f; }
+        uint16_t bc() const { return (b << 8) | c; }
+        uint16_t de() const { return (d << 8) | e; }
+        uint16_t hl() const { return (h << 8) | l; }
+        uint16_t getSp() const { return sp; }
+        uint16_t getPc() const { return pc; }
+        uint8_t getOp() const { return op; }
+
+    public:
+        Debugger* debugger;
+        Cpu(Bus* bus_) {
             bus = bus_; 
         }
         ~Cpu();
