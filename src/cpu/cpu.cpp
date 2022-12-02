@@ -88,9 +88,10 @@ void Cpu::SetHalfCarryAdd(uint16_t a, uint16_t b) {
 }
 
 /* Cpu::SetCarryAdd
- * Set carry flag for addition. */
+ * Set carry flag for addition.
+ * For 16-bit numbers, this is set when addition overflowed out of the 8th bit. */
 void Cpu::SetCarryAdd(uint16_t a, uint16_t b) {
-  bool val =  (int) (a + b) > 255;
+  bool val =  (int) (a + b) > 65536;
   AssignFlag(CARRY, val);
 }
 
@@ -108,8 +109,6 @@ void Cpu::SetCarrySub(uint16_t a, uint16_t b) {
   bool val = (int) (a - b) < 0;
   AssignFlag(CARRY, val);
 }
-
-// 0 - 90
 
 /*  Cpu::SetAddFlags
  *  Sets zero, sub, half carry, and carry flags for addition */
@@ -134,10 +133,11 @@ void Cpu::SetSubFlags(uint16_t a, uint16_t b) {
 /* Cpu::execute
  * Handles execution of all opcodes.
  * Returns the number of t-cycles elapsed. */
-bool Cpu::execute() {
+uint8_t Cpu::execute() {
   if (!cpuEnabled) return EXIT_SUCCESS;
   
   op = bus->read(pc);
+
   // std::cout << "cpu::execute - prestep" << std::endl;
   // debugger->step();
   // std::cout << "cpu::execute - poststep" << std::endl;
@@ -160,6 +160,7 @@ bool Cpu::execute() {
   //   --numCycles;
   // }
 
+  // Index into opcode function table and execute opcode
   uint8_t cyclesElapsed = (this->*opcodes[op])();
 
   // janky di instruction implementation
@@ -178,5 +179,5 @@ bool Cpu::execute() {
     }
   }
 
-  return EXIT_SUCCESS;
+  return cyclesElapsed;
 };

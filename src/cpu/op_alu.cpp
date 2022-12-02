@@ -20,10 +20,8 @@ uint8_t Cpu::INC_atHL() {
 /* 3C: INC A
  * Increment register A. */
 uint8_t Cpu::INC_A() {
-  SetHalfCarryAdd(a, 1);
+  SetAddFlags(a, 1);
   ++a;
-  AssignFlag(ZERO, (a==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
@@ -31,10 +29,8 @@ uint8_t Cpu::INC_A() {
 /* 04: INC B
  * Increment register B. */
 uint8_t Cpu::INC_B() {
-  SetHalfCarryAdd(b, 1);
+  SetAddFlags(b, 1);
   ++b;
-  AssignFlag(ZERO, (b==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
@@ -42,10 +38,8 @@ uint8_t Cpu::INC_B() {
 /* 0C: INC C
  * Increment register C. */
 uint8_t Cpu::INC_C() {
-  SetHalfCarryAdd(c, 1);
+  SetAddFlags(c, 1);
   ++c;
-  AssignFlag(ZERO, (c==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
@@ -53,10 +47,8 @@ uint8_t Cpu::INC_C() {
 /* 14: INC D
  * Increment register D. */
 uint8_t Cpu::INC_D() {
-  SetHalfCarryAdd(d, 1);
+  SetAddFlags(d, 1);
   ++d;
-  AssignFlag(ZERO, (d==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
@@ -64,10 +56,8 @@ uint8_t Cpu::INC_D() {
 /* 0C: INC E
  * Increment register E. */
 uint8_t Cpu::INC_E() {
-  SetHalfCarryAdd(e, 1);
+  SetAddFlags(e, 1);
   ++e;
-  AssignFlag(ZERO, (e==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
@@ -75,10 +65,8 @@ uint8_t Cpu::INC_E() {
 /* 24: INC H
  * Increment register H. */
 uint8_t Cpu::INC_H() {
-  SetHalfCarryAdd(h, 1);
+  SetAddFlags(h, 1);
   ++c;
-  AssignFlag(ZERO, (h==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
@@ -86,10 +74,8 @@ uint8_t Cpu::INC_H() {
 /* 2C: INC L
  * Increment register L. */
 uint8_t Cpu::INC_L() {
-  SetHalfCarryAdd(l, 1);
+  SetAddFlags(l, 1);
   ++l;
-  AssignFlag(ZERO, (l==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
@@ -97,64 +83,50 @@ uint8_t Cpu::INC_L() {
 /* DEC #
  * Decrement register. */
 uint8_t Cpu::DEC_A() {
-  SetHalfCarrySub(a, 1);
+  SetSubFlags(a, 1);
   --a;
-  AssignFlag(ZERO, (b==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
 
 uint8_t Cpu::DEC_B() {
-  SetHalfCarrySub(b, 1);
+  SetSubFlags(b, 1);
   --b;
-  AssignFlag(ZERO, (b==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
 
 uint8_t Cpu::DEC_C() {
-  SetHalfCarrySub(c, 1);
+  SetSubFlags(c, 1);
   --c;
-  AssignFlag(ZERO, (c==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
 
 uint8_t Cpu::DEC_D() {
-  SetHalfCarrySub(d, 1);
+  SetSubFlags(d, 1);
   --d;
-  AssignFlag(ZERO, (d==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
 
 uint8_t Cpu::DEC_E() {
-  SetHalfCarrySub(e, 1);
+  SetSubFlags(e, 1);
   --e;
-  AssignFlag(ZERO, (e==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
 
 uint8_t Cpu::DEC_H() {
-  SetHalfCarrySub(h, 1);
+  SetSubFlags(h, 1);
   --h;
-  AssignFlag(ZERO, (h==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }
 
 uint8_t Cpu::DEC_L() {
-  SetHalfCarrySub(l, 1);
+  SetSubFlags(l, 1);
   --l;
-  AssignFlag(ZERO, (l==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 4;
 }

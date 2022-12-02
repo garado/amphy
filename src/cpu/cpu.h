@@ -362,12 +362,12 @@ class Cpu
     void SetSubFlags(uint16_t a, uint16_t b);
 
   public:
-    bool execute();
+    uint8_t execute();
     bool GetFlag(CpuFlags flag);
     void AssignFlag(CpuFlags flag, bool val);
     void unknown(uint8_t opcode);
     void AddCycles(uint8_t cycles) { cycleCount += cycles; }
-    uint8_t getCycles() { return cycleCount; }
+    uint8_t GetCycles() { return cycleCount; }
 
     uint16_t af() const { return (a << 8) | f; }
     uint16_t bc() const { return (b << 8) | c; }
