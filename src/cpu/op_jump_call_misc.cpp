@@ -329,14 +329,17 @@ uint8_t Cpu::CALL_Z_u16() {
 /* CD: CALL u16
  * Push PC+1 to stack and jump to address  */
 uint8_t Cpu::CALL_u16() {
-  uint8_t addr = pc + 1;    // push
+  // Push pc to stack
+  uint8_t addr = pc + 1;
   uint8_t msb = addr >> 8;
   uint8_t lsb = addr & 0xFF;
   bus->write(--sp, msb);
   bus->write(--sp, lsb);
 
-  uint16_t u16 = bus->read(++pc); // new pc
-  pc = u16;
+  // Set PC to next 2 bytes
+  lsb = bus->read(++pc);
+  msb = bus->read(++pc);
+  pc = (msb << 8) | lsb;
   return 24;
 }
 
@@ -351,8 +354,10 @@ uint8_t Cpu::CALL_NC_u16() {
     bus->write(--sp, msb);
     bus->write(--sp, lsb);
 
-    uint16_t u16 = bus->read(++pc); // new pc
-    pc = u16;
+    // Set PC to next 2 bytes
+    lsb = bus->read(++pc);
+    msb = bus->read(++pc);
+    pc = (msb << 8) | lsb;
     return 24;
   } else {
     pc += 2;
