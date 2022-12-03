@@ -347,6 +347,7 @@ class Cpu
     uint8_t EI();
     uint8_t DAA();
 
+    // Misc helper functions for common operations within opcodes
     void SetHalfCarryAdd(uint8_t a, uint8_t b);
     void SetHalfCarrySub(uint8_t a, uint8_t b);
     void SetCarryAdd(uint8_t a, uint8_t b);
@@ -360,6 +361,18 @@ class Cpu
     void SetCarrySub(uint16_t a, uint16_t b);
     void SetAddFlags(uint16_t a, uint16_t b);
     void SetSubFlags(uint16_t a, uint16_t b);
+
+    uint8_t LD_n_atHL(uint8_t * reg);
+    uint8_t LD_atHL_n(uint8_t * reg);
+    uint8_t LD_n_u8(uint8_t * reg);
+    uint8_t LD_n_m(uint8_t * src, uint8_t * dst);
+    uint8_t LD_n_atM(uint8_t * src, uint16_t address);
+    uint8_t Push_NM(uint16_t regpair);
+    uint8_t Pop_NM(uint16_t regpair);
+
+    void PushPC();
+    void PopPC();
+    uint16_t FetchNextTwoBytes(void);
 
   public:
     uint8_t execute();
