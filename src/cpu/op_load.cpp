@@ -372,16 +372,14 @@ uint8_t Cpu::PUSH_HL() { return Push_NM( hl() ); }
 
 /* Pop_NM
  * Pop SP to register pair. Increment SP twice. */
-uint8_t Cpu::Pop_NM(uint16_t regpair) {
-  uint8_t lower = regpair >> 8;
-  uint8_t upper = regpair & 0xFF;
-  lower = bus->read(sp++);
-  upper = bus->read(sp++);
+uint8_t Cpu::Pop_NM(uint8_t * upper, uint8_t * lower) {
+  *lower = bus->read(sp++);
+  *upper = bus->read(sp++);
   ++pc;
   return 16;
 }
 
-uint8_t Cpu::POP_AF() { return Pop_NM( af() ); }
-uint8_t Cpu::POP_BC() { return Pop_NM( bc() ); }
-uint8_t Cpu::POP_DE() { return Pop_NM( de() ); }
-uint8_t Cpu::POP_HL() { return Pop_NM( hl() ); }
+uint8_t Cpu::POP_AF() { return Pop_NM( &a, &f ); }
+uint8_t Cpu::POP_BC() { return Pop_NM( &b, &c ); }
+uint8_t Cpu::POP_DE() { return Pop_NM( &d, &e ); }
+uint8_t Cpu::POP_HL() { return Pop_NM( &h, &l ); }

@@ -1,4 +1,7 @@
 
+/* ▄▀█ █░░ █░█ */ 
+/* █▀█ █▄▄ █▄█ */ 
+
 #include "cpu.h"
 
 /* ========== 8-BIT ALU ========== */
@@ -7,192 +10,22 @@
  * Increment contents of (HL). */
 uint8_t Cpu::INC_atHL() {
   uint8_t val = bus->read(hl());
-  SetHalfCarryAdd(val, 1);
+  SetAddFlags(val, 1);
   ++val;
   bus->write(hl(), val);
-  AssignFlag(ZERO, (val==0));
-  AssignFlag(SUB, 0);
   ++pc;
   return 12;
-}
-
-
-/* 3C: INC A
- * Increment register A. */
-uint8_t Cpu::INC_A() {
-  SetAddFlags(a, 1);
-  ++a;
-  ++pc;
-  return 4;
-}
-
-/* 04: INC B
- * Increment register B. */
-uint8_t Cpu::INC_B() {
-  SetAddFlags(b, 1);
-  ++b;
-  ++pc;
-  return 4;
-}
-
-/* 0C: INC C
- * Increment register C. */
-uint8_t Cpu::INC_C() {
-  SetAddFlags(c, 1);
-  ++c;
-  ++pc;
-  return 4;
-}
-
-/* 14: INC D
- * Increment register D. */
-uint8_t Cpu::INC_D() {
-  SetAddFlags(d, 1);
-  ++d;
-  ++pc;
-  return 4;
-}
-
-/* 0C: INC E
- * Increment register E. */
-uint8_t Cpu::INC_E() {
-  SetAddFlags(e, 1);
-  ++e;
-  ++pc;
-  return 4;
-}
-
-/* 24: INC H
- * Increment register H. */
-uint8_t Cpu::INC_H() {
-  SetAddFlags(h, 1);
-  ++c;
-  ++pc;
-  return 4;
-}
-
-/* 2C: INC L
- * Increment register L. */
-uint8_t Cpu::INC_L() {
-  SetAddFlags(l, 1);
-  ++l;
-  ++pc;
-  return 4;
-}
-
-/* DEC #
- * Decrement register. */
-uint8_t Cpu::DEC_A() {
-  SetSubFlags(a, 1);
-  --a;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::DEC_B() {
-  SetSubFlags(b, 1);
-  --b;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::DEC_C() {
-  SetSubFlags(c, 1);
-  --c;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::DEC_D() {
-  SetSubFlags(d, 1);
-  --d;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::DEC_E() {
-  SetSubFlags(e, 1);
-  --e;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::DEC_H() {
-  SetSubFlags(h, 1);
-  --h;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::DEC_L() {
-  SetSubFlags(l, 1);
-  --l;
-  ++pc;
-  return 4;
 }
 
 /* 35: DEC HL
  * Decrement contents of (HL). */
 uint8_t Cpu::DEC_atHL() {
   uint8_t val = bus->read(hl());
-  SetHalfCarrySub(val, 1);
+  SetSubFlags(val, 1);
   --val;
   bus->write(hl(), val);
-  AssignFlag(ZERO, (val == 0));
-  AssignFlag(SUB, 1);
   ++pc;
   return 12;
-}
-
-/*  ADD A, n
- *  Add n to A. */
-uint8_t Cpu::ADD_A_A() {
-  SetAddFlags(a, a);
-  a += a;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADD_A_B() {
-  SetAddFlags(a, b);
-  a += b;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADD_A_C() {
-  SetAddFlags(a, c);
-  a += c;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADD_A_D() {
-  SetAddFlags(a, d);
-  a += d;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADD_A_E() {
-  SetAddFlags(a, e);
-  a += e;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADD_A_H() {
-  SetAddFlags(a, h);
-  a += h;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADD_A_L() {
-  SetAddFlags(a, l);
-  a += l;
-  ++pc;
-  return 4;
 }
 
 /*  86: ADD A, (HL)
@@ -216,57 +49,6 @@ uint8_t Cpu::ADD_A_u8() {
   return 8;
 }
 
-/*  SUB A, n
- *  Sub n from A. */
-uint8_t Cpu::SUB_A_A() {
-  SetSubFlags(a, a);
-  a -= a;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SUB_A_B() {
-  SetSubFlags(a, b);
-  a -= b;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SUB_A_C() {
-  SetSubFlags(a, c);
-  a -= c;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SUB_A_D() {
-  SetSubFlags(a, d);
-  a -= d;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SUB_A_E() {
-  SetSubFlags(a, e);
-  a -= e;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SUB_A_H() {
-  SetSubFlags(a, h);
-  a -= h;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SUB_A_L() {
-  SetSubFlags(a, l);
-  a -= l;
-  ++pc;
-  return 4;
-}
-
 /*  96: SUB (HL)
  *  Subtract (HL) from A. */
 uint8_t Cpu::SUB_A_atHL() {
@@ -288,64 +70,101 @@ uint8_t Cpu::SUB_A_u8() {
   return 8;
 }
 
-/*  SBC A, R1
- *  Subtract value of R1 + carry from A. 
-*   A = A - (R1 + CY) */
-uint8_t Cpu::SBC_A_A() {
-  uint8_t val = a + GetFlag(CARRY);
+// -------------------------------
+
+/* INC_n
+ * Increment the contents of the specified register. */
+uint8_t Cpu::INC_n(uint8_t * reg)
+{
+  SetAddFlags(*reg, 1);
+  *reg = *reg + 1;
+  ++pc;
+  return 4;
+}
+
+uint8_t Cpu::INC_A() { return INC_n(&a); }
+uint8_t Cpu::INC_B() { return INC_n(&b); }
+uint8_t Cpu::INC_C() { return INC_n(&c); }
+uint8_t Cpu::INC_D() { return INC_n(&d); }
+uint8_t Cpu::INC_E() { return INC_n(&e); }
+uint8_t Cpu::INC_H() { return INC_n(&h); }
+uint8_t Cpu::INC_L() { return INC_n(&l); }
+
+/* DEC_n
+ * Decrement the contents of the specified register. */
+uint8_t Cpu::DEC_n(uint8_t * reg)
+{
+  SetSubFlags(*reg, 1);
+  *reg = *reg - 1;
+  ++pc;
+  return 4;
+}
+
+uint8_t Cpu::DEC_A() { return DEC_n(&a); }
+uint8_t Cpu::DEC_B() { return DEC_n(&b); }
+uint8_t Cpu::DEC_C() { return DEC_n(&c); }
+uint8_t Cpu::DEC_D() { return DEC_n(&d); }
+uint8_t Cpu::DEC_E() { return DEC_n(&e); }
+uint8_t Cpu::DEC_H() { return DEC_n(&h); }
+uint8_t Cpu::DEC_L() { return DEC_n(&l); }
+
+/* ADD A, n
+ * Add the contents of reg n to reg a.
+ * Store the result in reg a. */
+uint8_t Cpu::ADD_A_n(uint8_t * reg)
+{
+  SetAddFlags(a, *reg);
+  a += *reg;
+  ++pc;
+  return 4;
+}
+
+uint8_t Cpu::ADD_A_A() { return ADD_A_n(&a); }
+uint8_t Cpu::ADD_A_B() { return ADD_A_n(&b); }
+uint8_t Cpu::ADD_A_C() { return ADD_A_n(&c); }
+uint8_t Cpu::ADD_A_D() { return ADD_A_n(&d); }
+uint8_t Cpu::ADD_A_E() { return ADD_A_n(&e); }
+uint8_t Cpu::ADD_A_H() { return ADD_A_n(&h); }
+uint8_t Cpu::ADD_A_L() { return ADD_A_n(&l); }
+
+/* SUB A, n
+ * Subtract the contents of reg n from reg a.
+ * Store the result in reg a. */
+uint8_t Cpu::SUB_A_n(uint8_t * reg)
+{
+  SetSubFlags(a, *reg);
+  a -= *reg;
+  ++pc;
+  return 4;
+}
+
+uint8_t Cpu::SUB_A_A() { return SUB_A_n(&a); }
+uint8_t Cpu::SUB_A_B() { return SUB_A_n(&b); }
+uint8_t Cpu::SUB_A_C() { return SUB_A_n(&c); }
+uint8_t Cpu::SUB_A_D() { return SUB_A_n(&d); }
+uint8_t Cpu::SUB_A_E() { return SUB_A_n(&e); }
+uint8_t Cpu::SUB_A_H() { return SUB_A_n(&h); }
+uint8_t Cpu::SUB_A_L() { return SUB_A_n(&l); }
+
+/* SBC A, n
+ * Subtract value of reg n + carry from reg a.
+ * A = A - (R1 + CY) */
+uint8_t Cpu::SBC_A_n(uint8_t * reg)
+{
+  uint8_t val = *reg + GetFlag(CARRY);
   SetSubFlags(a, val);
   a -= val;
   ++pc;
   return 4;
 }
 
-uint8_t Cpu::SBC_A_B() {
-  uint8_t val = b + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SBC_A_C() {
-  uint8_t val = c + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SBC_A_D() {
-  uint8_t val = d + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SBC_A_E() {
-  uint8_t val = e + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SBC_A_H() {
-  uint8_t val = h + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::SBC_A_L() {
-  uint8_t val = l + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
-  ++pc;
-  return 4;
-}
+uint8_t Cpu::SBC_A_A() { return SBC_A_n(&a); }
+uint8_t Cpu::SBC_A_B() { return SBC_A_n(&b); }
+uint8_t Cpu::SBC_A_C() { return SBC_A_n(&c); }
+uint8_t Cpu::SBC_A_D() { return SBC_A_n(&d); }
+uint8_t Cpu::SBC_A_E() { return SBC_A_n(&e); }
+uint8_t Cpu::SBC_A_H() { return SBC_A_n(&h); }
+uint8_t Cpu::SBC_A_L() { return SBC_A_n(&l); }
 
 /*  SBC A, (HL)
  *  Subtract value of (HL) + carry from A. 
@@ -371,64 +190,25 @@ uint8_t Cpu::SBC_A_u8() {
   return 4;
 }
 
-/*  ADC A, R1
- *  Add value of R1 + carry to A. 
-*   A = A + (R1 + CY) */
-uint8_t Cpu::ADC_A_A() {
-  uint8_t val = a + GetFlag(CARRY);
+/* ADC A, n
+ * Add value of reg n + carry to reg a.
+ * A = A + (R1 + CY) */
+uint8_t Cpu::ADC_A_n(uint8_t * reg)
+{
+  uint8_t val = *reg + GetFlag(CARRY);
   SetAddFlags(a, val);
   a += val;
   ++pc;
   return 4;
 }
 
-uint8_t Cpu::ADC_A_B() {
-  uint8_t val = b + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADC_A_C() {
-  uint8_t val = c + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADC_A_D() {
-  uint8_t val = d + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADC_A_E() {
-  uint8_t val = e + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADC_A_H() {
-  uint8_t val = h + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::ADC_A_L() {
-  uint8_t val = l + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
-  ++pc;
-  return 4;
-}
+uint8_t Cpu::ADC_A_A() { return ADC_A_n(&a); }
+uint8_t Cpu::ADC_A_B() { return ADC_A_n(&b); }
+uint8_t Cpu::ADC_A_C() { return ADC_A_n(&c); }
+uint8_t Cpu::ADC_A_D() { return ADC_A_n(&d); }
+uint8_t Cpu::ADC_A_E() { return ADC_A_n(&e); }
+uint8_t Cpu::ADC_A_H() { return ADC_A_n(&h); }
+uint8_t Cpu::ADC_A_L() { return ADC_A_n(&l); }
 
 /*  ADC A, (HL)
  *  Add value of (HL) + carry to A. 
@@ -458,47 +238,20 @@ uint8_t Cpu::ADC_A_u8() {
  *  Compare A with R1.
  *  To compare, the Game Boy subtracts A - R1, with the result 
  *  thrown away. If (A-R1) == 0 they are equal. */
-uint8_t Cpu::CP_A_A() {
-  SetSubFlags(a, a);
+uint8_t Cpu::CP_A_n(uint8_t *reg)
+{
+  SetSubFlags(a, *reg);
   ++pc;
   return 4;
 }
 
-uint8_t Cpu::CP_A_B() {
-  SetSubFlags(a, b);
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::CP_A_C() {
-  SetSubFlags(a, c);
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::CP_A_D() {
-  SetSubFlags(a, d);
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::CP_A_E() {
-  SetSubFlags(a, e);
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::CP_A_H() {
-  SetSubFlags(a, h);
-  ++pc;
-  return 4;
-}
-
-uint8_t Cpu::CP_A_L() {
-  SetSubFlags(a, l);
-  ++pc;
-  return 4;
-}
+uint8_t Cpu::CP_A_A() { return CP_A_n(&a); }
+uint8_t Cpu::CP_A_B() { return CP_A_n(&b); }
+uint8_t Cpu::CP_A_C() { return CP_A_n(&c); }
+uint8_t Cpu::CP_A_D() { return CP_A_n(&d); }
+uint8_t Cpu::CP_A_E() { return CP_A_n(&e); }
+uint8_t Cpu::CP_A_H() { return CP_A_n(&h); }
+uint8_t Cpu::CP_A_L() { return CP_A_n(&l); }
 
 /*  BE: CP (HL)
  *  Compare A with (HL).
@@ -524,77 +277,57 @@ uint8_t Cpu::CP_A_u8() {
 
 
 /* ========== 16-BIT ALU ========== */
-uint8_t Cpu::DEC_BC() {
-  uint16_t val = bc();
+uint8_t Cpu::DEC_nm(uint8_t * upper_reg, uint8_t * lower_reg)
+{
+  uint16_t val = (*upper_reg << 8) | *lower_reg;
+  SetSubFlags(val, 1);
   --val;
-  b = val >> 8;
-  c = val & 0x00FF;
+  *upper_reg = val >> 8;
+  *lower_reg = val & 0xFF;
   ++pc;
   return 8;
 }
 
-uint8_t Cpu::DEC_DE() {
-  uint16_t val = de();
-  --val;
-  d = val >> 8;
-  e = val & 0x00FF;
-  ++pc;
-  return 8;
-}
-
-uint8_t Cpu::DEC_HL() {
-  uint16_t val = hl();
-  --val;
-  h = val >> 8;
-  l = val & 0x00FF;
-  ++pc;
-  return 8;
-}
+uint8_t Cpu::DEC_BC() { return DEC_nm(&b, &c); }
+uint8_t Cpu::DEC_DE() { return DEC_nm(&b, &c); }
+uint8_t Cpu::DEC_HL() { return DEC_nm(&b, &c); }
 
 uint8_t Cpu::DEC_SP() {
   --sp;
+  SetSubFlags(sp, 1);
   ++pc;
   return 8;
 }
 
-uint8_t Cpu::INC_BC() {
-  uint16_t val = bc();
+uint8_t Cpu::INC_nm(uint8_t * upper_reg, uint8_t * lower_reg)
+{
+  uint16_t val = (*upper_reg << 8) | *lower_reg;
+  SetAddFlags(val, 1);
   ++val;
-  b = val >> 8;
-  c = val & 0x00FF;
+  *upper_reg = val >> 8;
+  *lower_reg = val & 0xFF;
   ++pc;
   return 8;
 }
 
-uint8_t Cpu::INC_DE() {
-  uint16_t val = de();
-  ++val;
-  d = val >> 8;
-  e = val & 0x00FF;
-  ++pc;
-  return 8;
-}
-
-uint8_t Cpu::INC_HL() {
-  uint16_t val = hl();
-  ++val;
-  h = val >> 8;
-  l = val & 0x00FF;
-  ++pc;
-  return 8;
-}
+uint8_t Cpu::INC_BC() { return INC_nm(&b, &c); }
+uint8_t Cpu::INC_DE() { return INC_nm(&d, &e); }
+uint8_t Cpu::INC_HL() { return INC_nm(&h, &l); }
 
 uint8_t Cpu::INC_SP() {
+  SetAddFlags(sp, 1);
   ++sp;
   ++pc;
   return 8;
 }
 
-/* 09: Add the contents of pair BC to the contents of register pair HL,
+/* 09: Add the contents of register pair nm to the contents of register pair HL,
  * and store the results in register pair HL. */
-uint8_t Cpu::ADD_HL_BC() {
-  uint16_t sum = hl() + bc();
-  SetAddFlags(hl(), bc());
+uint8_t Cpu::ADD_HL_nm(uint8_t * upper, uint8_t * lower)
+{
+  uint16_t regpair = (*upper << 8) | *lower;
+  uint16_t sum = hl() + regpair;
+  SetAddFlags(hl(), regpair);
   h = sum >> 8;
   l = sum & 0xFF;
   AssignFlag(SUB, 0);
@@ -602,25 +335,9 @@ uint8_t Cpu::ADD_HL_BC() {
   return 8;
 }
 
-uint8_t Cpu::ADD_HL_DE() {
-  uint16_t sum = hl() + de();
-  SetAddFlags(hl(), de());
-  h = sum >> 8;
-  l = sum & 0xFF;
-  AssignFlag(SUB, 0);
-  ++pc;
-  return 8;
-}
-
-uint8_t Cpu::ADD_HL_HL() {
-  uint16_t sum = hl() + hl();
-  SetAddFlags(hl(), hl());
-  h = sum >> 8;
-  l = sum & 0xFF;
-  AssignFlag(SUB, 0);
-  ++pc;
-  return 8;
-}
+uint8_t Cpu::ADD_HL_BC() { return ADD_HL_nm(&b, &c); }
+uint8_t Cpu::ADD_HL_DE() { return ADD_HL_nm(&d, &e); }
+uint8_t Cpu::ADD_HL_HL() { return ADD_HL_nm(&h, &l); }
 
 uint8_t Cpu::ADD_HL_SP() {
   uint16_t sum = hl() + sp;

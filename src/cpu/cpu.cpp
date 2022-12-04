@@ -10,32 +10,46 @@
 #include "cpu.h"
 #include "../utils/debug.h"
 
-/* Cpu::AssignFlag
- * Assign an f-register flag to a value. */
+/* @Function  Cpu::AssignFlag()
+ * @return    None
+ * @param     flag  Which flag to set
+ *            val   Its value
+ * @brief     Assign an f-register flag to a value */
 void Cpu::AssignFlag(CpuFlags flag, bool val) {
   f &= ~(1 << flag);    // set bit to 0
   f |= (val << flag);   // so we can set to val
 }
 
+/* @Function  Cpu::GetFlag()
+ * @return    0 or 1
+ * @param     flag  Which flag to read
+ * @brief     Return the value of an f-register flag */
 bool Cpu::GetFlag(CpuFlags flag) {
   return (f >> flag) & 0x1;
 }
 
-
 /* █▀█ ▄▄ █▄▄ █ ▀█▀ */ 
 /* ███ ░░ █▄█ █ ░█░ */
 
-/* Cpu::SetHalfCarryAdd
- * Set half carry flag for addition. */
+/* @Function  Cpu::SetHalfCarryAdd() (8bit)
+ * @return    None
+ * @param     a   First number to add
+ *            b   Second number to add
+ * @brief     Sets the half carry flag for the addition of 2 8-bit numbers. 
+ *            This occurs when there is a carry from the 3rd to the 4th bit. */
 void Cpu::SetHalfCarryAdd(uint8_t a, uint8_t b) {
   bool val = ((a & 0xF) + (b & 0xF)) > 0x10;
   AssignFlag(HALF_CARRY, val);
 }
 
-/* Cpu::SetCarryAdd
- * Set carry flag for addition. */
+/* @Function  Cpu::SetCarryAdd() (8bit)
+ * @return    None
+ * @param     a   First number to add
+ *            b   Second number to add
+ * @brief     Sets the carry flag for the addition of 2 8-bit numbers. 
+ *            This occurs when there is overflow out of the 4th bit. */
 void Cpu::SetCarryAdd(uint8_t a, uint8_t b) {
-  bool val =  (int) (a + b) > 255;
+  bool val = (int) (a + b) > 255;
   AssignFlag(CARRY, val);
 }
 
@@ -55,8 +69,8 @@ void Cpu::SetCarrySub(uint8_t a, uint8_t b) {
   AssignFlag(CARRY, val);
 }
 
-/*  Cpu::SetAddFlags
- *  Sets zero, sub, half carry, and carry flags for addition */
+/* Cpu::SetAddFlags
+ * Sets zero, sub, half carry, and carry flags for addition */
 void Cpu::SetAddFlags(uint8_t a, uint8_t b) {
   uint8_t result = a + b;
   AssignFlag(ZERO, (result==0));
@@ -75,7 +89,7 @@ void Cpu::SetSubFlags(uint8_t a, uint8_t b) {
   SetCarrySub(a, b);
 }
 
-// ----------------------------
+/* ------------------------------------------- */
 
 /* ▄█ █▄▄ ▄▄ █▄▄ █ ▀█▀ */ 
 /* ░█ █▄█ ░░ █▄█ █ ░█░ */ 
@@ -137,31 +151,16 @@ uint8_t Cpu::execute() {
   if (!cpuEnabled) return EXIT_SUCCESS;
   
   op = bus->read(pc);
-
-  // std::cout << "cpu::execute - prestep" << std::endl;
-  // debugger->step();
-  // std::cout << "cpu::execute - poststep" << std::endl;
-
-  // // debug: wait for keypress before advancing
-  // // press enter for next cycle
-  // if (numCycles == 0 && bkpt != 0) {
-  //   if (pc == bkpt) {
-  //     debugger();
-  //   }
-  // } else if (numCycles == 0) {
-  //   debugger();
-  // } else {
-  //   --numCycles;
-  // }
-
-  // if (numCycles == 0 && bkpt == 1) {
-  //   debugger(); 
-  // } else {
-  //   --numCycles;
-  // }
+  ++pc; // pc points to address of the next byte to be fetched 
 
   // Index into opcode function table and execute opcode
-  uint8_t cyclesElapsed = (this->*opcodes[op])();
+  uint8_t cyclesElapsed;
+  try {
+    cyclesElapsed = (this->*opcodes[op])();
+  } catch (const std::exception &exc) {
+    std::cerr << "Cpu::Execute: error" << std::endl;
+    std::cerr << exc.what() << std::endl;
+  }
 
   // janky di instruction implementation
   if (disableInterrupts != 0) {
@@ -181,3 +180,50 @@ uint8_t Cpu::execute() {
 
   return cyclesElapsed;
 };
+
+uint16_t Cpu::FetchNextTwoBytes(void)
+{
+  uint8_t lsb = bus->read(++pc);
+  uint8_t msb = bus->read(++pc);
+  return (msb << 8) | lsb;
+}
+
+/* █▀ ▀█▀ ▄▀█ █▀▀ █▄▀    █░█ █▀▀ █░░ █▀█ █▀▀ █▀█ █▀ */ 
+/* ▄█ ░█░ █▀█ █▄▄ █░█    █▀█ ██▄ █▄▄ █▀▀ ██▄ █▀▄ ▄█ */ 
+
+/* Cpu::Pop8Bit()
+ * Pop value off the stack.
+ * Read the value then increment stack pointer. */
+uint8_t Cpu::Pop8Bit(void)
+{
+  return bus->read(sp++);
+}
+
+/* Cpu::Pop16Bit()
+ * Pop value off the stack.
+ * Read the value then increment stack pointer. */
+uint16_t Cpu::Pop16Bit(void)
+{
+  uint8_t lower = bus->read(sp++);
+  uint8_t upper = bus->read(sp++);
+  return (upper << 8) | lower;
+}
+
+/* Cpu::Push8bit()
+ * Push value to stack. 
+ * Decrement the stack pointer, then write the value. */
+void Cpu::Push8Bit(uint8_t val)
+{
+  bus->write(--sp, val);
+}
+
+/* Cpu::Push16bit()
+ * Push value to stack.
+ * Decrement the stack pointer, then write the value. */
+void Cpu::Push16Bit(uint16_t val)
+{
+  uint8_t upper = val >> 8;
+  uint8_t lower = val & 0xFF;
+  bus->write(--sp, upper);
+  bus->write(--sp, lower);
+}
