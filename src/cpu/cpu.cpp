@@ -9,7 +9,7 @@
 
 #include "cpu.h"
 #include "../utils/debug.h"
-
+#include "../defines.h"
 
 /* @Function  Cpu::af()
  * @return    None
@@ -165,8 +165,11 @@ void Cpu::SetAddFlags(uint16_t a, uint16_t b) {
   SetCarryAdd(a, b);
 }
 
-/*  Cpu::SetSubFlags
- *  Sets zero, sub, half carry, and carry flags for subtraction */
+/* @Function  Cpu::SetSubFlags
+ * @param     a Number to subtract from
+ * @param     b Number to subtract
+ * @brief     Sets zero, sub, half carry, and carry flags for subtraction.
+ *            Does a - b. */
 void Cpu::SetSubFlags(uint16_t a, uint16_t b) {
   uint16_t result = a - b;
   AssignFlag(ZERO, (result==0));
@@ -175,9 +178,10 @@ void Cpu::SetSubFlags(uint16_t a, uint16_t b) {
   SetCarrySub(a, b);
 }
 
-/* Cpu::execute
- * Handles execution of all opcodes.
- * Returns the number of t-cycles elapsed. */
+/* @Function  Cpu::execute
+ * @return    SUCCESS or FAILURE
+ * @param     None
+ * @brief     Handles execution of all opcodes. */
 uint8_t Cpu::execute() {
   //if (!cpuEnabled) return EXIT_SUCCESS;
   
@@ -185,18 +189,18 @@ uint8_t Cpu::execute() {
   ++pc;
 
   // Index into opcode function table and execute opcode
-  uint8_t cyclesElapsed;
+  bool status;
+  
   try {
     // I dont know how to check if function table entry is null lmao
     // So here is this
     std::string opcode_name = opcode_names[op];
     if (opcode_name == "NULL") {
-      std::cout << "Cpu::Execute: Trying to access NULL opcode " << std::hex << (int) op << std::endl;
-      std::cout << "Exiting..." << std::endl;
-      exit(EXIT_FAILURE);
-      //throw(69);
+      std::cout << __PRETTY_FUNCTION__ << ": Trying to access NULL opcode " << std::hex << (int) op 
+                << "Exiting..." << std::endl;
+      return FAILURE;
     } else {
-      cyclesElapsed = (this->*opcodes[op])();
+      (this->*opcodes[op])();
     }
   } catch (const std::exception &exc) {
     std::cerr << "Cpu::Execute: error" << std::endl;
@@ -229,7 +233,7 @@ uint8_t Cpu::execute() {
     }
   }
 
-  return cyclesElapsed;
+  return SUCCESS;
 };
 
 uint16_t Cpu::FetchNextTwoBytes(void)

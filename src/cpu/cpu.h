@@ -46,6 +46,7 @@ class Cpu
 
     // Misc vars
     int   cycleCount = 0; // in t-cycles
+    uint8_t cycles_last_taken = 0;
     bool  cpuEnabled = true;
     uint8_t disableInterrupts = 0;
     uint8_t enableInterrupts = 0;
@@ -54,7 +55,7 @@ class Cpu
 
   public:
     // Array of function pointers to opcodes.
-    typedef uint8_t (Cpu::*Opcode)();
+    typedef void (Cpu::*Opcode)();
     Opcode opcodes[256] = { 
     //  +0              +1                +2                +3                +4                  +5                +6                +7                +8                  +9                +A                +B              +C                +D              +E                +F
       &Cpu::NOP,        &Cpu::LD_BC_u16,  &Cpu::LD_atBC_A,  &Cpu::INC_BC,     &Cpu::INC_B,        &Cpu::DEC_B,      &Cpu::LD_B_u8,    &Cpu::RLCA,       &Cpu::LD_atu16_SP,  &Cpu::ADD_HL_BC,  &Cpu::LD_A_atBC,  &Cpu::DEC_BC,   &Cpu::INC_C,      &Cpu::DEC_C,    &Cpu::LD_C_u8,    &Cpu::RRCA,     // 00+
@@ -97,286 +98,286 @@ class Cpu
 
   private:
     // Rotate/shift
-    uint8_t RLA();
-    uint8_t RRA();
-    uint8_t RLCA();
-    uint8_t RRCA();
+    void RLA();
+    void RRA();
+    void RLCA();
+    void RRCA();
     
     // Bit ops
-    uint8_t AND_A_A();
-    uint8_t AND_A_B();
-    uint8_t AND_A_C();
-    uint8_t AND_A_D();
-    uint8_t AND_A_E();
-    uint8_t AND_A_H();
-    uint8_t AND_A_L();
-    uint8_t AND_A_atHL();
-    uint8_t AND_A_u8();
+    void AND_A_A();
+    void AND_A_B();
+    void AND_A_C();
+    void AND_A_D();
+    void AND_A_E();
+    void AND_A_H();
+    void AND_A_L();
+    void AND_A_atHL();
+    void AND_A_u8();
 
-    uint8_t OR_A_A();
-    uint8_t OR_A_B();
-    uint8_t OR_A_C();
-    uint8_t OR_A_D();
-    uint8_t OR_A_E();
-    uint8_t OR_A_H();
-    uint8_t OR_A_L();
-    uint8_t OR_A_atHL();
-    uint8_t OR_A_u8();
+    void OR_A_A();
+    void OR_A_B();
+    void OR_A_C();
+    void OR_A_D();
+    void OR_A_E();
+    void OR_A_H();
+    void OR_A_L();
+    void OR_A_atHL();
+    void OR_A_u8();
 
-    uint8_t XOR_A_A();
-    uint8_t XOR_A_B();
-    uint8_t XOR_A_C();
-    uint8_t XOR_A_D();
-    uint8_t XOR_A_E();
-    uint8_t XOR_A_H();
-    uint8_t XOR_A_L();
-    uint8_t XOR_A_atHL();
-    uint8_t XOR_A_u8();
+    void XOR_A_A();
+    void XOR_A_B();
+    void XOR_A_C();
+    void XOR_A_D();
+    void XOR_A_E();
+    void XOR_A_H();
+    void XOR_A_L();
+    void XOR_A_atHL();
+    void XOR_A_u8();
 
     // 8-bit ALU
-    uint8_t INC_A();
-    uint8_t INC_B();
-    uint8_t INC_C();
-    uint8_t INC_D();
-    uint8_t INC_E();
-    uint8_t INC_H();
-    uint8_t INC_L();
-    uint8_t INC_atHL();
+    void INC_A();
+    void INC_B();
+    void INC_C();
+    void INC_D();
+    void INC_E();
+    void INC_H();
+    void INC_L();
+    void INC_atHL();
 
-    uint8_t DEC_A();
-    uint8_t DEC_B();
-    uint8_t DEC_C();
-    uint8_t DEC_D();
-    uint8_t DEC_E();
-    uint8_t DEC_H();
-    uint8_t DEC_L();
-    uint8_t DEC_atHL();
+    void DEC_A();
+    void DEC_B();
+    void DEC_C();
+    void DEC_D();
+    void DEC_E();
+    void DEC_H();
+    void DEC_L();
+    void DEC_atHL();
 
-    uint8_t ADD_A_A();
-    uint8_t ADD_A_B();
-    uint8_t ADD_A_C();
-    uint8_t ADD_A_D();
-    uint8_t ADD_A_E();
-    uint8_t ADD_A_H();
-    uint8_t ADD_A_L();
-    uint8_t ADD_A_atHL();
-    uint8_t ADD_A_u8();
+    void ADD_A_A();
+    void ADD_A_B();
+    void ADD_A_C();
+    void ADD_A_D();
+    void ADD_A_E();
+    void ADD_A_H();
+    void ADD_A_L();
+    void ADD_A_atHL();
+    void ADD_A_u8();
 
-    uint8_t SUB_A_A();
-    uint8_t SUB_A_B();
-    uint8_t SUB_A_C();
-    uint8_t SUB_A_D();
-    uint8_t SUB_A_E();
-    uint8_t SUB_A_H();
-    uint8_t SUB_A_L();
-    uint8_t SUB_A_atHL();
-    uint8_t SUB_A_u8();
+    void SUB_A_A();
+    void SUB_A_B();
+    void SUB_A_C();
+    void SUB_A_D();
+    void SUB_A_E();
+    void SUB_A_H();
+    void SUB_A_L();
+    void SUB_A_atHL();
+    void SUB_A_u8();
 
-    uint8_t SBC_A_A();
-    uint8_t SBC_A_B();
-    uint8_t SBC_A_C();
-    uint8_t SBC_A_D();
-    uint8_t SBC_A_E();
-    uint8_t SBC_A_H();
-    uint8_t SBC_A_L();
-    uint8_t SBC_A_atHL();
-    uint8_t SBC_A_u8();
+    void SBC_A_A();
+    void SBC_A_B();
+    void SBC_A_C();
+    void SBC_A_D();
+    void SBC_A_E();
+    void SBC_A_H();
+    void SBC_A_L();
+    void SBC_A_atHL();
+    void SBC_A_u8();
 
-    uint8_t ADC_A_A();
-    uint8_t ADC_A_B();
-    uint8_t ADC_A_C();
-    uint8_t ADC_A_D();
-    uint8_t ADC_A_E();
-    uint8_t ADC_A_H();
-    uint8_t ADC_A_L();
-    uint8_t ADC_A_atHL();
-    uint8_t ADC_A_u8();
+    void ADC_A_A();
+    void ADC_A_B();
+    void ADC_A_C();
+    void ADC_A_D();
+    void ADC_A_E();
+    void ADC_A_H();
+    void ADC_A_L();
+    void ADC_A_atHL();
+    void ADC_A_u8();
 
-    uint8_t CP_A_A();
-    uint8_t CP_A_B();
-    uint8_t CP_A_C();
-    uint8_t CP_A_D();
-    uint8_t CP_A_E();
-    uint8_t CP_A_H();
-    uint8_t CP_A_L();
-    uint8_t CP_A_atHL();
-    uint8_t CP_A_u8();
+    void CP_A_A();
+    void CP_A_B();
+    void CP_A_C();
+    void CP_A_D();
+    void CP_A_E();
+    void CP_A_H();
+    void CP_A_L();
+    void CP_A_atHL();
+    void CP_A_u8();
 
     // 16-bit ALU
-    uint8_t DEC_BC();
-    uint8_t DEC_DE();
-    uint8_t DEC_HL();
-    uint8_t DEC_SP();
-    uint8_t INC_BC();
-    uint8_t INC_DE();
-    uint8_t INC_HL();
-    uint8_t INC_SP();
-    uint8_t ADD_HL_BC();
-    uint8_t ADD_HL_DE();
-    uint8_t ADD_HL_HL();
-    uint8_t ADD_HL_SP();
-    uint8_t ADD_SP_i8();
+    void DEC_BC();
+    void DEC_DE();
+    void DEC_HL();
+    void DEC_SP();
+    void INC_BC();
+    void INC_DE();
+    void INC_HL();
+    void INC_SP();
+    void ADD_HL_BC();
+    void ADD_HL_DE();
+    void ADD_HL_HL();
+    void ADD_HL_SP();
+    void ADD_SP_i8();
 
     // 8-bit loads
-    uint8_t LD_A_atHL();
-    uint8_t LD_B_atHL();
-    uint8_t LD_C_atHL();
-    uint8_t LD_D_atHL();
-    uint8_t LD_E_atHL();
-    uint8_t LD_H_atHL();
-    uint8_t LD_L_atHL();
+    void LD_A_atHL();
+    void LD_B_atHL();
+    void LD_C_atHL();
+    void LD_D_atHL();
+    void LD_E_atHL();
+    void LD_H_atHL();
+    void LD_L_atHL();
 
-    uint8_t LD_atHL_A();
-    uint8_t LD_atHL_B();
-    uint8_t LD_atHL_C();
-    uint8_t LD_atHL_D();
-    uint8_t LD_atHL_E();
-    uint8_t LD_atHL_H();
-    uint8_t LD_atHL_L();
-    uint8_t LD_atHL_u8();
+    void LD_atHL_A();
+    void LD_atHL_B();
+    void LD_atHL_C();
+    void LD_atHL_D();
+    void LD_atHL_E();
+    void LD_atHL_H();
+    void LD_atHL_L();
+    void LD_atHL_u8();
 
-    uint8_t LD_A_u8();
-    uint8_t LD_B_u8();
-    uint8_t LD_C_u8();
-    uint8_t LD_D_u8();
-    uint8_t LD_E_u8();
-    uint8_t LD_H_u8();
-    uint8_t LD_L_u8();
+    void LD_A_u8();
+    void LD_B_u8();
+    void LD_C_u8();
+    void LD_D_u8();
+    void LD_E_u8();
+    void LD_H_u8();
+    void LD_L_u8();
 
-    uint8_t LD_A_A();   // Register to register
-    uint8_t LD_A_B();
-    uint8_t LD_A_C();
-    uint8_t LD_A_D();
-    uint8_t LD_A_E();
-    uint8_t LD_A_H();
-    uint8_t LD_A_L();
-    uint8_t LD_B_A();
-    uint8_t LD_B_B();
-    uint8_t LD_B_C();
-    uint8_t LD_B_D();
-    uint8_t LD_B_E();
-    uint8_t LD_B_H();
-    uint8_t LD_B_L();
-    uint8_t LD_C_A();
-    uint8_t LD_C_B();
-    uint8_t LD_C_C();
-    uint8_t LD_C_D();
-    uint8_t LD_C_E();
-    uint8_t LD_C_H();
-    uint8_t LD_C_L();
-    uint8_t LD_D_A();
-    uint8_t LD_D_B();
-    uint8_t LD_D_C();
-    uint8_t LD_D_D();
-    uint8_t LD_D_E();
-    uint8_t LD_D_H();
-    uint8_t LD_D_L();
-    uint8_t LD_E_A();
-    uint8_t LD_E_B();
-    uint8_t LD_E_C();
-    uint8_t LD_E_D();
-    uint8_t LD_E_E();
-    uint8_t LD_E_H();
-    uint8_t LD_E_L();
-    uint8_t LD_H_A();
-    uint8_t LD_H_B();
-    uint8_t LD_H_C();
-    uint8_t LD_H_D();
-    uint8_t LD_H_E();
-    uint8_t LD_H_H();
-    uint8_t LD_H_L();
-    uint8_t LD_L_A();
-    uint8_t LD_L_B();
-    uint8_t LD_L_C();
-    uint8_t LD_L_D();
-    uint8_t LD_L_E();
-    uint8_t LD_L_H();
-    uint8_t LD_L_L();
+    void LD_A_A();   // Register to register
+    void LD_A_B();
+    void LD_A_C();
+    void LD_A_D();
+    void LD_A_E();
+    void LD_A_H();
+    void LD_A_L();
+    void LD_B_A();
+    void LD_B_B();
+    void LD_B_C();
+    void LD_B_D();
+    void LD_B_E();
+    void LD_B_H();
+    void LD_B_L();
+    void LD_C_A();
+    void LD_C_B();
+    void LD_C_C();
+    void LD_C_D();
+    void LD_C_E();
+    void LD_C_H();
+    void LD_C_L();
+    void LD_D_A();
+    void LD_D_B();
+    void LD_D_C();
+    void LD_D_D();
+    void LD_D_E();
+    void LD_D_H();
+    void LD_D_L();
+    void LD_E_A();
+    void LD_E_B();
+    void LD_E_C();
+    void LD_E_D();
+    void LD_E_E();
+    void LD_E_H();
+    void LD_E_L();
+    void LD_H_A();
+    void LD_H_B();
+    void LD_H_C();
+    void LD_H_D();
+    void LD_H_E();
+    void LD_H_H();
+    void LD_H_L();
+    void LD_L_A();
+    void LD_L_B();
+    void LD_L_C();
+    void LD_L_D();
+    void LD_L_E();
+    void LD_L_H();
+    void LD_L_L();
 
-    uint8_t LD_BC_A();
-    uint8_t LD_atBC_A();
-    uint8_t LD_atDE_A();
-    uint8_t LD_A_atBC();
-    uint8_t LD_A_atDE();
+    void LD_BC_A();
+    void LD_atBC_A();
+    void LD_atDE_A();
+    void LD_A_atBC();
+    void LD_A_atDE();
 
-    uint8_t LD_atu16_A();
-    uint8_t LD_A_atu16();
+    void LD_atu16_A();
+    void LD_A_atu16();
 
-    uint8_t LDH_atu8_A();
-    uint8_t LDH_atC_A();
-    uint8_t LDH_A_atu8();
-    uint8_t LDH_A_atC();
+    void LDH_atu8_A();
+    void LDH_atC_A();
+    void LDH_A_atu8();
+    void LDH_A_atC();
 
-    uint8_t LDD_A_atHL();
-    uint8_t LDD_atHL_A();
-    uint8_t LDI_A_atHL();
-    uint8_t LDI_atHL_A();
+    void LDD_A_atHL();
+    void LDD_atHL_A();
+    void LDI_A_atHL();
+    void LDI_atHL_A();
 
     // 16-bit loads
-    uint8_t LD_BC_u16();
-    uint8_t LD_DE_u16();
-    uint8_t LD_HL_u16();
-    uint8_t LD_SP_u16();
-    uint8_t LD_atu16_SP();
-    uint8_t LD_SP_HL();
-    uint8_t LD_HL_SP_i8();
-    uint8_t PUSH_AF();
-    uint8_t PUSH_BC();
-    uint8_t PUSH_DE();
-    uint8_t PUSH_HL();
-    uint8_t POP_AF();
-    uint8_t POP_BC();
-    uint8_t POP_DE();
-    uint8_t POP_HL();
+    void LD_BC_u16();
+    void LD_DE_u16();
+    void LD_HL_u16();
+    void LD_SP_u16();
+    void LD_atu16_SP();
+    void LD_SP_HL();
+    void LD_HL_SP_i8();
+    void PUSH_AF();
+    void PUSH_BC();
+    void PUSH_DE();
+    void PUSH_HL();
+    void POP_AF();
+    void POP_BC();
+    void POP_DE();
+    void POP_HL();
 
     // Jumps
-    uint8_t JP_HL();
-    uint8_t JR_i8();
-    uint8_t JP_u16();
-    uint8_t JP_NZ_u16();
-    uint8_t JP_Z_u16();
-    uint8_t JP_NC_u16();
-    uint8_t JP_C_u16();
-    uint8_t JR_NZ_i8();
-    uint8_t JR_Z_i8();
-    uint8_t JR_NC_i8();
-    uint8_t JR_C_i8();
+    void JP_HL();
+    void JR_i8();
+    void JP_u16();
+    void JP_NZ_u16();
+    void JP_Z_u16();
+    void JP_NC_u16();
+    void JP_C_u16();
+    void JR_NZ_i8();
+    void JR_Z_i8();
+    void JR_NC_i8();
+    void JR_C_i8();
 
     // Calls
-    uint8_t CALL_NZ_u16();
-    uint8_t CALL_Z_u16();
-    uint8_t CALL_u16();
-    uint8_t CALL_NC_u16();
-    uint8_t CALL_C_u16();
+    void CALL_NZ_u16();
+    void CALL_Z_u16();
+    void CALL_u16();
+    void CALL_NC_u16();
+    void CALL_C_u16();
 
     // Returns
-    uint8_t RET_NZ();
-    uint8_t RET_Z();
-    uint8_t RET();
-    uint8_t RETI();
-    uint8_t RET_NC();
-    uint8_t RET_C();
+    void RET_NZ();
+    void RET_Z();
+    void RET();
+    void RETI();
+    void RET_NC();
+    void RET_C();
 
     // Restart
-    uint8_t RST_00h();
-    uint8_t RST_08h();
-    uint8_t RST_10h();
-    uint8_t RST_18h();
-    uint8_t RST_20h();
-    uint8_t RST_28h();
-    uint8_t RST_30h();
-    uint8_t RST_38h();
+    void RST_00h();
+    void RST_08h();
+    void RST_10h();
+    void RST_18h();
+    void RST_20h();
+    void RST_28h();
+    void RST_30h();
+    void RST_38h();
 
     // Misc
-    uint8_t CPL();
-    uint8_t CCF();
-    uint8_t SCF();
-    uint8_t NOP();
-    uint8_t HALT(); // !!!
-    uint8_t STOP(); // !!!
-    uint8_t DI();
-    uint8_t EI();
-    uint8_t DAA();
+    void CPL();
+    void CCF();
+    void SCF();
+    void NOP();
+    void HALT(); // !!!
+    void STOP(); // !!!
+    void DI();
+    void EI();
+    void DAA();
 
     // Misc helper functions for common operations within opcodes
     void SetHalfCarryAdd(uint8_t a, uint8_t b);
@@ -393,30 +394,30 @@ class Cpu
     void SetAddFlags(uint16_t a, uint16_t b);
     void SetSubFlags(uint16_t a, uint16_t b);
 
-    uint8_t LD_n_atHL(uint8_t * reg);
-    uint8_t LD_atHL_n(uint8_t * reg);
-    uint8_t LD_n_u8(uint8_t * reg);
-    uint8_t LD_n_m(uint8_t * src, uint8_t * dst);
-    uint8_t LD_n_atM(uint8_t * src, uint16_t address);
-    uint8_t Push_NM(uint16_t regpair);
-    uint8_t Pop_NM(uint8_t * upper, uint8_t * lower);
+    void LD_n_atHL(uint8_t * reg);
+    void LD_atHL_n(uint8_t * reg);
+    void LD_n_u8(uint8_t * reg);
+    void LD_n_m(uint8_t * src, uint8_t * dst);
+    void LD_n_atM(uint8_t * src, uint16_t address);
+    void Push_NM(uint16_t regpair);
+    void Pop_NM(uint8_t * upper, uint8_t * lower);
 
-    uint8_t INC_n(uint8_t * reg);
-    uint8_t DEC_n(uint8_t * reg);
-    uint8_t ADD_A_n(uint8_t * reg);
-    uint8_t SUB_A_n(uint8_t * reg);
-    uint8_t SBC_A_n(uint8_t * reg);
-    uint8_t ADC_A_n(uint8_t * reg);
-    uint8_t CP_A_n(uint8_t *reg);
-    uint8_t DEC_nm(uint8_t * upper_reg, uint8_t * lower_reg);
-    uint8_t INC_nm(uint8_t * upper_reg, uint8_t * lower_reg);
-    uint8_t ADD_HL_nm(uint8_t * upper, uint8_t * lower);
-    uint8_t JP_flag_u16(CpuFlags flag, uint8_t val);
-    uint8_t CALL_flag_u16(CpuFlags flag, uint8_t val);
-    uint8_t JR_flag_i8(CpuFlags flag, uint8_t val);
-    uint8_t AND_A_n(uint8_t * reg);
-    uint8_t OR_A_n(uint8_t * reg);
-    uint8_t XOR_A_n(uint8_t * reg);
+    void INC_n(uint8_t * reg);
+    void DEC_n(uint8_t * reg);
+    void ADD_A_n(uint8_t * reg);
+    void SUB_A_n(uint8_t * reg);
+    void SBC_A_n(uint8_t * reg);
+    void ADC_A_n(uint8_t * reg);
+    void CP_A_n(uint8_t *reg);
+    void DEC_nm(uint8_t * upper_reg, uint8_t * lower_reg);
+    void INC_nm(uint8_t * upper_reg, uint8_t * lower_reg);
+    void ADD_HL_nm(uint8_t * upper, uint8_t * lower);
+    void JP_flag_u16(CpuFlags flag, uint8_t val);
+    void CALL_flag_u16(CpuFlags flag, uint8_t val);
+    void JR_flag_i8(CpuFlags flag, uint8_t val);
+    void AND_A_n(uint8_t * reg);
+    void OR_A_n(uint8_t * reg);
+    void XOR_A_n(uint8_t * reg);
 
     uint8_t   Pop8Bit(void);
     uint16_t  Pop16Bit(void);

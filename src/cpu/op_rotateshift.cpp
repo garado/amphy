@@ -7,7 +7,7 @@
 /* 07: RLCA
  * Rotate the contents of register A to the left. 
  * The contents of bit 7 are placed in both the CY flag and bit 0 of register A. */
-uint8_t Cpu::RLCA() {
+void Cpu::RLCA() {
   uint8_t oldbit7 = a >> 7;
   a <<= 1;
   a |= oldbit7;
@@ -15,12 +15,12 @@ uint8_t Cpu::RLCA() {
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, oldbit7);
-  return 4;
+  cycles_last_taken = 4;
 }
 
 /* 0F: RRCA
  * Rotate A right. Old bit 0 to CY and bit 7 of A. */
-uint8_t Cpu::RRCA() {
+void Cpu::RRCA() {
   uint8_t oldbit0 = a & 0x1;
   a >>= 1;
   a |= (oldbit0 << 7);
@@ -28,14 +28,14 @@ uint8_t Cpu::RRCA() {
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, oldbit0);
-  return 4;
+  cycles_last_taken = 4;
 }
 
 /* 17: RLA
  * Combine CY and A to make a 9-bit number, with CY as msb.
  * Then rotate that left. Old CY gets copied to bit 0.
  * Old bit 8 of A is discarded. */
-uint8_t Cpu::RLA() {
+void Cpu::RLA() {
   uint8_t oldCy = GetFlag(CARRY);
   uint8_t oldbit7 = a >> 7;
   a <<= 1;
@@ -44,14 +44,14 @@ uint8_t Cpu::RLA() {
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, oldCy);
-  return 4;
+  cycles_last_taken = 4;
 }
 
 /* 1F: RRA
  * Combine CY and A to make a 9-bit number, with CY as msb.
  * Then rotate that right. Old CY gets copied to bit 7.
  * Old bit 0 of A is discarded. */
-uint8_t Cpu::RRA() {
+void Cpu::RRA() {
   uint8_t oldCy = GetFlag(CARRY);
   uint8_t oldbit0 = a & 0x1;
   a >>= 1;
@@ -60,5 +60,5 @@ uint8_t Cpu::RRA() {
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, oldbit0);
-  return 4;
+  cycles_last_taken = 4;
 }
