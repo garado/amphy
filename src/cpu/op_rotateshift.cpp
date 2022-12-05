@@ -15,7 +15,6 @@ uint8_t Cpu::RLCA() {
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, oldbit7);
-  ++pc;
   return 4;
 }
 
@@ -29,7 +28,6 @@ uint8_t Cpu::RRCA() {
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, oldbit0);
-  ++pc;
   return 4;
 }
 
@@ -46,7 +44,6 @@ uint8_t Cpu::RLA() {
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, oldCy);
-  ++pc;
   return 4;
 }
 
@@ -63,6 +60,5 @@ uint8_t Cpu::RRA() {
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, oldbit0);
-  ++pc;
   return 4;
 }

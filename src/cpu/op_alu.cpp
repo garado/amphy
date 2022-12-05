@@ -9,11 +9,10 @@
 /* 34: INC HL
  * Increment contents of (HL). */
 uint8_t Cpu::INC_atHL() {
-  uint8_t val = bus->read(hl());
+  uint8_t val = bus->read( hl() );
   SetAddFlags(val, 1);
   ++val;
   bus->write(hl(), val);
-  ++pc;
   return 12;
 }
 
@@ -24,61 +23,57 @@ uint8_t Cpu::DEC_atHL() {
   SetSubFlags(val, 1);
   --val;
   bus->write(hl(), val);
-  ++pc;
   return 12;
 }
 
-/*  86: ADD A, (HL)
- *  A = A + (HL) */
+/* 86: ADD A, (HL)
+ * A = A + (HL) */
 uint8_t Cpu::ADD_A_atHL() {
-  uint16_t address = (h << 8) | l;
+  uint16_t address = hl();
   uint8_t val = bus->read(address);
   SetAddFlags(a, val);
   a += val;
-  ++pc;
   return 8;
 }
 
 /*  C6: ADD A, u8
  *  A = A + u8 */
 uint8_t Cpu::ADD_A_u8() {
-  int8_t u8 = bus->read(++pc);
+  int8_t u8 = bus->read(pc++);
   SetAddFlags(a, u8);
   a += u8;
-  ++pc;
   return 8;
 }
 
 /*  96: SUB (HL)
  *  Subtract (HL) from A. */
 uint8_t Cpu::SUB_A_atHL() {
-  uint16_t address = (h << 8) | l;
-  uint8_t val = bus->read(address);
+  uint8_t val = bus->read( hl() );
   SetSubFlags(a, val);
   a -= val;
-  ++pc;
   return 8;
 }
 
 /*  D6: SUB n
  *  Subtract 8bit immed u8 from A */
 uint8_t Cpu::SUB_A_u8() {
-  uint8_t u8 = bus->read(++pc);
+  uint8_t u8 = bus->read(pc++);
   SetSubFlags(a, u8);
   a -= u8;
-  ++pc;
   return 8;
 }
 
 // -------------------------------
 
 /* INC_n
- * Increment the contents of the specified register. */
+ * Increment the contents of the specified register.
+ * This DOES NOT set the carry flag (so we can't use SetAddFlags) */
 uint8_t Cpu::INC_n(uint8_t * reg)
 {
-  SetAddFlags(*reg, 1);
+  SetHalfCarryAdd(*reg, 1);
+  AssignFlag(SUB, 0);
   *reg = *reg + 1;
-  ++pc;
+  AssignFlag(ZERO, (*reg == 0));
   return 4;
 }
 
@@ -91,12 +86,14 @@ uint8_t Cpu::INC_H() { return INC_n(&h); }
 uint8_t Cpu::INC_L() { return INC_n(&l); }
 
 /* DEC_n
- * Decrement the contents of the specified register. */
+ * Decrement the contents of the specified register.
+ * This DOES NOT set the carry flag (so we can't use SetSubFlags) */
 uint8_t Cpu::DEC_n(uint8_t * reg)
 {
-  SetSubFlags(*reg, 1);
+  AssignFlag(SUB, 1);
+  SetHalfCarrySub(*reg, 1);
   *reg = *reg - 1;
-  ++pc;
+  AssignFlag(ZERO, (*reg == 0));
   return 4;
 }
 
@@ -115,7 +112,6 @@ uint8_t Cpu::ADD_A_n(uint8_t * reg)
 {
   SetAddFlags(a, *reg);
   a += *reg;
-  ++pc;
   return 4;
 }
 
@@ -134,7 +130,6 @@ uint8_t Cpu::SUB_A_n(uint8_t * reg)
 {
   SetSubFlags(a, *reg);
   a -= *reg;
-  ++pc;
   return 4;
 }
 
@@ -154,7 +149,6 @@ uint8_t Cpu::SBC_A_n(uint8_t * reg)
   uint8_t val = *reg + GetFlag(CARRY);
   SetSubFlags(a, val);
   a -= val;
-  ++pc;
   return 4;
 }
 
@@ -170,11 +164,9 @@ uint8_t Cpu::SBC_A_L() { return SBC_A_n(&l); }
  *  Subtract value of (HL) + carry from A. 
  *  A = A - ((HL) + CY) */
 uint8_t Cpu::SBC_A_atHL() {
-  uint16_t address = (h << 8) | l;
-  uint8_t val = bus->read(address) + GetFlag(CARRY);
+  uint8_t val = bus->read(hl()) + GetFlag(CARRY);
   SetSubFlags(a, val);
   a -= val;
-  ++pc;
   return 8;
 }
 
@@ -182,11 +174,10 @@ uint8_t Cpu::SBC_A_atHL() {
  *  Subtract u8 + carry from A. 
  *  A = A - (u8 + CY) */
 uint8_t Cpu::SBC_A_u8() {
-  uint8_t u8 = bus->read(++pc);
+  uint8_t u8 = bus->read(pc++);
   uint8_t val = u8 + GetFlag(CARRY);
   SetSubFlags(a, val);
   a -= val;
-  ++pc;
   return 4;
 }
 
@@ -198,7 +189,6 @@ uint8_t Cpu::ADC_A_n(uint8_t * reg)
   uint8_t val = *reg + GetFlag(CARRY);
   SetAddFlags(a, val);
   a += val;
-  ++pc;
   return 4;
 }
 
@@ -210,27 +200,25 @@ uint8_t Cpu::ADC_A_E() { return ADC_A_n(&e); }
 uint8_t Cpu::ADC_A_H() { return ADC_A_n(&h); }
 uint8_t Cpu::ADC_A_L() { return ADC_A_n(&l); }
 
-/*  ADC A, (HL)
- *  Add value of (HL) + carry to A. 
- *  A = A + ((HL) + CY) */
+/* ADC A, (HL)
+ * Add value of (HL) + carry to A. 
+ * A = A + ((HL) + CY) */
 uint8_t Cpu::ADC_A_atHL() {
-  uint16_t address = (h << 8) | l;
+  uint16_t address = hl();
   uint8_t val = bus->read(address) + GetFlag(CARRY);
   SetAddFlags(a, val);
   a += val;
-  ++pc;
   return 8;
 }
 
-/*  ADC A, u8
- *  Add u8 + carry to A. 
- *  A = A + (u8 + CY) */
+/* ADC A, u8
+ * Add u8 + carry to A. 
+ * A = A + (u8 + CY) */
 uint8_t Cpu::ADC_A_u8() {
-  uint8_t u8 = bus->read(++pc);
+  uint8_t u8 = bus->read(pc++);
   uint8_t val = u8 + GetFlag(CARRY);
   SetAddFlags(a, val);
   a += val;
-  ++pc;
   return 4;
 }
 
@@ -241,7 +229,6 @@ uint8_t Cpu::ADC_A_u8() {
 uint8_t Cpu::CP_A_n(uint8_t *reg)
 {
   SetSubFlags(a, *reg);
-  ++pc;
   return 4;
 }
 
@@ -260,7 +247,6 @@ uint8_t Cpu::CP_A_L() { return CP_A_n(&l); }
 uint8_t Cpu::CP_A_atHL() {
   uint8_t val = bus->read(hl());
   SetSubFlags(a, val);
-  ++pc;
   return 8;
 }
 
@@ -271,20 +257,20 @@ uint8_t Cpu::CP_A_atHL() {
 uint8_t Cpu::CP_A_u8() {
   uint8_t val = bus->read(++pc);
   SetSubFlags(a, val);
-  ++pc;
   return 8;
 }
 
-
 /* ========== 16-BIT ALU ========== */
+
+/* DEC_nm
+ * Decrement a given register pair.
+ * This DOES NOT affect any flags. */
 uint8_t Cpu::DEC_nm(uint8_t * upper_reg, uint8_t * lower_reg)
 {
   uint16_t val = (*upper_reg << 8) | *lower_reg;
-  SetSubFlags(val, 1);
   --val;
   *upper_reg = val >> 8;
   *lower_reg = val & 0xFF;
-  ++pc;
   return 8;
 }
 
@@ -295,18 +281,18 @@ uint8_t Cpu::DEC_HL() { return DEC_nm(&b, &c); }
 uint8_t Cpu::DEC_SP() {
   --sp;
   SetSubFlags(sp, 1);
-  ++pc;
   return 8;
 }
 
+/* INC_nm
+ * Increment a given register pair.
+ * Apparently this DOES NOT affect any flags. */
 uint8_t Cpu::INC_nm(uint8_t * upper_reg, uint8_t * lower_reg)
 {
   uint16_t val = (*upper_reg << 8) | *lower_reg;
-  SetAddFlags(val, 1);
   ++val;
   *upper_reg = val >> 8;
   *lower_reg = val & 0xFF;
-  ++pc;
   return 8;
 }
 
@@ -317,7 +303,6 @@ uint8_t Cpu::INC_HL() { return INC_nm(&h, &l); }
 uint8_t Cpu::INC_SP() {
   SetAddFlags(sp, 1);
   ++sp;
-  ++pc;
   return 8;
 }
 
@@ -331,7 +316,6 @@ uint8_t Cpu::ADD_HL_nm(uint8_t * upper, uint8_t * lower)
   h = sum >> 8;
   l = sum & 0xFF;
   AssignFlag(SUB, 0);
-  ++pc;
   return 8;
 }
 
@@ -345,19 +329,17 @@ uint8_t Cpu::ADD_HL_SP() {
   h = sum >> 8;
   l = sum & 0xFF;
   AssignFlag(SUB, 0);
-  ++pc;
   return 8;
 }
 
 /* E8: ADD SP, i8
  * Add n to sp */
 uint8_t Cpu::ADD_SP_i8() {
-  int8_t i8 = bus->read(++pc);
+  int8_t i8 = bus->read(pc++);
   SetHalfCarryAdd(sp, i8);
   SetCarryAdd(sp, i8);
   sp += i8;
   AssignFlag(ZERO, 0);
   AssignFlag(SUB, 0);
-  ++pc;
   return 16;
 }

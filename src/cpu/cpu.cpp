@@ -10,6 +10,35 @@
 #include "cpu.h"
 #include "../utils/debug.h"
 
+
+/* @Function  Cpu::af()
+ * @return    None
+ * @param     af  A 16-bit number to set to af
+ * @brief     Helper function for setting register values */
+void Cpu::af(uint16_t af)
+{
+  a = (af >> 8) & 0xFF;
+  f = af & 0xFF;
+}
+
+void Cpu::bc(uint16_t bc)
+{
+  b = (bc >> 8) & 0xFF;
+  c = bc & 0xFF;
+}
+
+void Cpu::de(uint16_t de)
+{
+  d = (de >> 8) & 0xFF;
+  e = de & 0xFF;
+}
+
+void Cpu::hl(uint16_t hl)
+{
+  h = (hl >> 8) & 0xFF;
+  l = hl & 0xFF;
+}
+
 /* @Function  Cpu::AssignFlag()
  * @return    None
  * @param     flag  Which flag to set
@@ -38,7 +67,7 @@ bool Cpu::GetFlag(CpuFlags flag) {
  * @brief     Sets the half carry flag for the addition of 2 8-bit numbers. 
  *            This occurs when there is a carry from the 3rd to the 4th bit. */
 void Cpu::SetHalfCarryAdd(uint8_t a, uint8_t b) {
-  bool val = ((a & 0xF) + (b & 0xF)) > 0x10;
+  bool val = (((a & 0xF) + (b & 0xF)) & 0x10) == 0x10;
   AssignFlag(HALF_CARRY, val);
 }
 
@@ -49,7 +78,7 @@ void Cpu::SetHalfCarryAdd(uint8_t a, uint8_t b) {
  * @brief     Sets the carry flag for the addition of 2 8-bit numbers. 
  *            This occurs when there is overflow out of the 4th bit. */
 void Cpu::SetCarryAdd(uint8_t a, uint8_t b) {
-  bool val = (int) (a + b) > 255;
+  bool val = (int) (a + b) > 0xFF;
   AssignFlag(CARRY, val);
 }
 
@@ -95,9 +124,11 @@ void Cpu::SetSubFlags(uint8_t a, uint8_t b) {
 /* ░█ █▄█ ░░ █▄█ █ ░█░ */ 
 
 /* Cpu::SetHalfCarryAdd
- * Set half carry flag for addition. */
+ * Set half carry flag for addition.
+ * For 16-bit numbers, this occurs when there is a carry from bit 7 to bit 8. */
 void Cpu::SetHalfCarryAdd(uint16_t a, uint16_t b) {
-  bool val = ((a & 0xF) + (b & 0xF)) > 0xF;
+  // unsure if this is correct
+  bool val = (((a & 0xFF) + (b & 0xFF)) & 0x100) == 0x100;
   AssignFlag(HALF_CARRY, val);
 }
 
@@ -148,18 +179,38 @@ void Cpu::SetSubFlags(uint16_t a, uint16_t b) {
  * Handles execution of all opcodes.
  * Returns the number of t-cycles elapsed. */
 uint8_t Cpu::execute() {
-  if (!cpuEnabled) return EXIT_SUCCESS;
+  //if (!cpuEnabled) return EXIT_SUCCESS;
   
   op = bus->read(pc);
-  ++pc; // pc points to address of the next byte to be fetched 
+  ++pc;
 
   // Index into opcode function table and execute opcode
   uint8_t cyclesElapsed;
   try {
-    cyclesElapsed = (this->*opcodes[op])();
+    // I dont know how to check if function table entry is null lmao
+    // So here is this
+    std::string opcode_name = opcode_names[op];
+    if (opcode_name == "NULL") {
+      std::cout << "Cpu::Execute: Trying to access NULL opcode " << std::hex << (int) op << std::endl;
+      std::cout << "Exiting..." << std::endl;
+      exit(EXIT_FAILURE);
+      //throw(69);
+    } else {
+      cyclesElapsed = (this->*opcodes[op])();
+    }
   } catch (const std::exception &exc) {
     std::cerr << "Cpu::Execute: error" << std::endl;
     std::cerr << exc.what() << std::endl;
+
+    std::cout << "Opcode 0x" << std::hex << std::setw(2) << std::setfill('0') << op <<
+              ": " << opcode_names[op] << std::endl;
+    std::cout << "af: " << std::hex << std::setw(4) << std::setfill('0') << af() << std::endl;
+    std::cout << "bc: " << std::hex << std::setw(4) << std::setfill('0') << bc() << std::endl;
+    std::cout << "de: " << std::hex << std::setw(4) << std::setfill('0') << de() << std::endl;
+    std::cout << "hl: " << std::hex << std::setw(4) << std::setfill('0') << hl() << std::endl;
+    std::cout << "sp: " << std::hex << std::setw(4) << std::setfill('0') << sp << std::endl;
+    std::cout << "pc: " << std::hex << std::setw(4) << std::setfill('0') << pc << std::endl;
+    std::cout << std::endl;
   }
 
   // janky di instruction implementation

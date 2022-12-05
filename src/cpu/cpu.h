@@ -10,8 +10,6 @@
 #ifndef CPU_H
 #define CPU_H
 
-class Debugger;
-
 class Cpu 
 {
   private:
@@ -21,9 +19,10 @@ class Cpu
     uint8_t b = 0x00;
     uint8_t c = 0x00;
     uint8_t d = 0xFF;
-    uint8_t e = 0xD6;
+    uint8_t e = 0x56;
     uint8_t h = 0x00;
     uint8_t l = 0x0D;
+
     // uint8_t a = 0x01;
     // uint8_t f = 0xB0;
     // uint8_t b = 0x00;
@@ -32,13 +31,17 @@ class Cpu
     // uint8_t e = 0xD8;
     // uint8_t h = 0x01;
     // uint8_t l = 0x4D;
+
     uint8_t op = 0;     // opcode
     uint16_t sp = 0xFFFE; // stack pointer
     uint16_t pc = 0x0100; // program counter
 
     // Enums for reg F flags
     typedef enum CpuFlags {
-      CARRY = 0x4, HALF_CARRY, SUB, ZERO
+      CARRY = 0x4,  // bit 4
+      HALF_CARRY,   // bit 5
+      SUB,  // bit 6
+      ZERO  // bit 7
     } CpuFlags;
 
     // Misc vars
@@ -409,8 +412,11 @@ class Cpu
     uint8_t INC_nm(uint8_t * upper_reg, uint8_t * lower_reg);
     uint8_t ADD_HL_nm(uint8_t * upper, uint8_t * lower);
     uint8_t JP_flag_u16(CpuFlags flag, uint8_t val);
+    uint8_t CALL_flag_u16(CpuFlags flag, uint8_t val);
     uint8_t JR_flag_i8(CpuFlags flag, uint8_t val);
-    void    Call_u16(void);
+    uint8_t AND_A_n(uint8_t * reg);
+    uint8_t OR_A_n(uint8_t * reg);
+    uint8_t XOR_A_n(uint8_t * reg);
 
     uint8_t   Pop8Bit(void);
     uint16_t  Pop16Bit(void);
@@ -428,20 +434,25 @@ class Cpu
     void AddCycles(uint8_t cycles) { cycleCount += cycles; }
     uint8_t GetCycles() { return cycleCount; }
 
+    // Register helper functions
+    void af(uint16_t af);
+    void bc(uint16_t bc);
+    void de(uint16_t de);
+    void hl(uint16_t hl);
+    
     uint16_t af() const { return (a << 8) | f; }
     uint16_t bc() const { return (b << 8) | c; }
     uint16_t de() const { return (d << 8) | e; }
     uint16_t hl() const { return (h << 8) | l; }
+
     uint16_t getSp() const { return sp; }
     uint16_t getPc() const { return pc; }
     uint8_t getOp() const { return op; }
 
   public:
-    Debugger* debugger;
     Cpu(Bus* bus_) {
       bus = bus_; 
     }
-    ~Cpu();
 
   private:
     Bus* bus;

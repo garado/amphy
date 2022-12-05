@@ -12,7 +12,6 @@
 uint8_t Cpu::LD_n_atHL(uint8_t * reg) {
   uint16_t address = hl();
   *reg = bus->read(address);
-  ++pc;
   return 8;
 }
 
@@ -29,7 +28,6 @@ uint8_t Cpu::LD_L_atHL() { return LD_n_atHL(&l); }
 uint8_t Cpu::LD_atHL_n(uint8_t * reg) {
   uint16_t address = hl();
   bus->write(address, *reg);
-  ++pc;
   return 8;
 }
 
@@ -45,18 +43,16 @@ uint8_t Cpu::LD_atHL_L() { return LD_atHL_n(&l); }
  * Store contents of 8bit immediate n into mem location (HL) */
 uint8_t Cpu::LD_atHL_u8() {
   uint16_t address = hl();
-  uint8_t val = bus->read(++pc);
+  uint8_t val = bus->read(pc++);
   bus->write(address, val);
-  ++pc;
   return 12;
 }
 
 /* LD n, u8
  * Load 8bit immediate value into register n. */
 uint8_t Cpu::LD_n_u8(uint8_t * reg) {
-  uint8_t u8 = bus->read(++pc);
+  uint8_t u8 = bus->read(pc++);
   *reg = u8;
-  ++pc;
   return 8;
 }
 
@@ -74,7 +70,6 @@ uint8_t Cpu::LD_L_u8() { return LD_n_u8(&l); }
  * @brief     Put value of reg n into reg m */
 uint8_t Cpu::LD_n_m(uint8_t * src, uint8_t * dst) {
   *dst = *src;
-  ++pc;
   return 4;
 }
 
@@ -140,7 +135,6 @@ uint8_t Cpu::LD_n_atM(uint8_t * src, uint16_t address)
 {
   uint8_t val = bus->read(address);
   *src = val;
-  ++pc;
   return 8;
 }
 
@@ -150,20 +144,18 @@ uint8_t Cpu::LD_A_atDE() { return LD_n_atM( &a, de() ); }
 /* E0: LD (a8), A
  * Store the contents of reg A in the address specified by $FF00 + 8-bit immediate. */
 uint8_t Cpu::LDH_atu8_A() {
-  uint8_t a8 = bus->read(++pc);
+  uint8_t a8 = bus->read(pc++);
   uint16_t address = 0xFF00 + a8;
   bus->write(address, a);
-  ++pc;
   return 12;
 }
 
 /* F0: LD A, (a8)
  * Put value at address $FF00 + n into A. */
 uint8_t Cpu::LDH_A_atu8() {
-  uint8_t a8 = bus->read(++pc);
+  uint8_t a8 = bus->read(pc++);
   uint16_t address = 0xFF00 + a8;
   a = bus->read(address);
-  ++pc;
   return 12;
 }
 
@@ -172,7 +164,6 @@ uint8_t Cpu::LDH_A_atu8() {
 uint8_t Cpu::LDH_A_atC() {
   uint16_t address = 0xFF00 | c;
   a = bus->read(address);
-  ++pc;
   return 8;
 }
 
@@ -181,7 +172,6 @@ uint8_t Cpu::LDH_A_atC() {
 uint8_t Cpu::LDH_atC_A() {
   uint16_t address = 0xFF00 | c;
   bus->write(address, a);
-  ++pc;
   return 8;
 }
 
@@ -193,9 +183,7 @@ uint8_t Cpu::LDD_A_atHL() {
 
   // Decrement HL
   address--;
-  h = address >> 8;
-  l = (address & 0xFF);
-  ++pc;
+  hl(address);
   return 8;
 }
 
@@ -207,9 +195,7 @@ uint8_t Cpu::LDD_atHL_A() {
 
   // Decrement HL
   address--;
-  h = address >> 8;
-  l = (address & 0xFF);
-  ++pc;
+  hl(address);
   return 8;
 }
 
@@ -221,9 +207,7 @@ uint8_t Cpu::LDI_A_atHL() {
 
   // Increment HL
   address++;
-  h = address >> 8;
-  l = (address & 0xFF);
-  ++pc;
+  hl(address);
   return 8;
 }
 
@@ -235,9 +219,7 @@ uint8_t Cpu::LDI_atHL_A() {
 
   // Increment HL
   address++;
-  h = address >> 8;
-  l = (address & 0xFF);
-  ++pc;
+  hl(address);
   return 8;
 }
 
@@ -245,13 +227,11 @@ uint8_t Cpu::LDI_atHL_A() {
  * Add 8-bit signed operand i8 (-128 to 127) to SP.
  * Store result in HL. */
 uint8_t Cpu::LD_HL_SP_i8() {
-  int8_t i8 = bus->read(++pc);
+  int8_t i8 = bus->read(pc++);
   uint16_t newHL = sp + i8;
-  h = (newHL & 0xFF00) >> 8;
-  l = newHL & 0xFF;
+  hl(newHL);
   SetAddFlags(sp, (int16_t) i8);
   AssignFlag(ZERO, 0);
-  ++pc;
   return 12;
 }
 
@@ -261,57 +241,51 @@ uint8_t Cpu::LD_HL_SP_i8() {
 /* FA: LD A, (nn)
  * Load value in mem address specified by 16-bit immediate nn into A. */
 uint8_t Cpu::LD_A_atu16() {
-  uint8_t lsb = bus->read(++pc);
-  uint8_t msb = bus->read(++pc);
+  uint8_t lsb = bus->read(pc++);
+  uint8_t msb = bus->read(pc++);
   uint16_t address = (msb << 8) | lsb;
   a = bus->read(address);
-  ++pc;
   return 16;
 }
 
 /* EA: LD (a16), A
  * Store contents of register A in address specified by a16. */
 uint8_t Cpu::LD_atu16_A() {
-  uint8_t lsb = bus->read(++pc);
-  uint8_t msb = bus->read(++pc);
+  uint8_t lsb = bus->read(pc++);
+  uint8_t msb = bus->read(pc++);
   uint16_t address = (msb << 8) | lsb;
   bus->write(address, a);
-  ++pc;
   return 16;
 }
 
 /* 01: LD BC, d16
  * Put immed val d16 into register pair BC */
 uint8_t Cpu::LD_BC_u16() {
-  c = bus->read(++pc); // LSB of d16
-  b = bus->read(++pc); // MSB of d16
-  ++pc;
+  c = bus->read(pc++); // LSB of d16
+  b = bus->read(pc++); // MSB of d16
   return 12;
 }
 
 uint8_t Cpu::LD_DE_u16() {
-  e = bus->read(++pc); // LSB of d16
-  d = bus->read(++pc); // MSB of d16
-  ++pc;
+  e = bus->read(pc++); // LSB of d16
+  d = bus->read(pc++); // MSB of d16
   return 12;
 }
 
 /* 31: LD SP, d16
  * Put immed val d16 into SP */
 uint8_t Cpu::LD_SP_u16() {
-  uint8_t lsb = bus->read(++pc);
-  uint8_t msb = bus->read(++pc);
+  uint8_t lsb = bus->read(pc++);
+  uint8_t msb = bus->read(pc++);
   sp = (msb << 8) | lsb;
-  ++pc;
   return 12;
 }
 
 /* 31: LD HL, d16
  * Put immed val d16 into HL */
 uint8_t Cpu::LD_HL_u16() {
-  l = bus->read(++pc); // LSB of nn
-  h = bus->read(++pc); // MSB of nn
-  ++pc;
+  l = bus->read(pc++); // LSB of nn
+  h = bus->read(pc++); // MSB of nn
   return 12;
 }
 
@@ -320,7 +294,6 @@ uint8_t Cpu::LD_HL_u16() {
 uint8_t Cpu::LD_atBC_A() {
   uint16_t address = bc();
   bus->write(address, a);
-  ++pc;
   return 8;
 }
 
@@ -329,7 +302,6 @@ uint8_t Cpu::LD_atBC_A() {
 uint8_t Cpu::LD_atDE_A() {
   uint16_t address = de();
   bus->write(address, a);
-  ++pc;
   return 8;
 }
 
@@ -340,9 +312,8 @@ uint8_t Cpu::LD_atDE_A() {
 uint8_t Cpu::LD_atu16_SP() {
   uint8_t msb = sp >> 8;
   uint8_t lsb = sp & 0xFF;
-  bus->write(++pc, lsb);
-  bus->write(++pc, msb);
-  ++pc;
+  bus->write(pc++, lsb);
+  bus->write(pc++, msb);
   return 20;
 }
 
@@ -350,7 +321,6 @@ uint8_t Cpu::LD_atu16_SP() {
  * Put HL into SP. */
 uint8_t Cpu::LD_SP_HL() {
   sp = hl();
-  ++pc;
   return 8;
 }
 
@@ -361,7 +331,6 @@ uint8_t Cpu::Push_NM(uint16_t regpair) {
   uint8_t upper = regpair & 0xFF;
   bus->write(--sp, lower);
   bus->write(--sp, upper);
-  ++pc;
   return 16;
 }
 
@@ -375,7 +344,6 @@ uint8_t Cpu::PUSH_HL() { return Push_NM( hl() ); }
 uint8_t Cpu::Pop_NM(uint8_t * upper, uint8_t * lower) {
   *lower = bus->read(sp++);
   *upper = bus->read(sp++);
-  ++pc;
   return 16;
 }
 

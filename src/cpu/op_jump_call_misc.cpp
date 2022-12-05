@@ -13,8 +13,7 @@ uint8_t Cpu::JP_HL() {
 /* 18: JR n
  * Add n to current pc. */
 uint8_t Cpu::JR_i8() {
-  int8_t i8 = bus->read(++pc);
-  ++pc; // pc points to next instruction before current instr is evaluated
+  int8_t i8 = bus->read(pc++);
   pc += i8;
   return 8;
 }
@@ -22,10 +21,10 @@ uint8_t Cpu::JR_i8() {
 /* C3: JP nn
  * Jump to address nn */
 uint8_t Cpu::JP_u16() {
-  uint8_t lsb = bus->read(++pc);
-  uint8_t msb = bus->read(++pc);
+  uint8_t lsb = bus->read(pc++);
+  uint8_t msb = bus->read(pc++);
   pc = (msb << 8) | lsb;
-  return 12;
+  return 16;
 }
 
 /* JP_flag_u16
@@ -33,15 +32,14 @@ uint8_t Cpu::JP_u16() {
  * Otherwise, move on to the next pc as normal. */
 uint8_t Cpu::JP_flag_u16(CpuFlags flag, uint8_t value)
 {
-  uint8_t lsb = bus->read(++pc);
-  uint8_t msb = bus->read(++pc);
+  uint8_t lsb = bus->read(pc++);
+  uint8_t msb = bus->read(pc++);
   uint16_t address = (msb << 8) | lsb;
 
   if (GetFlag(flag) == value) {
     pc = address;
     return 16;
   } else {
-    ++pc;
     return 12;
   }
 }
@@ -51,19 +49,17 @@ uint8_t Cpu::JP_Z_u16()   { return JP_flag_u16(ZERO, 1); }
 uint8_t Cpu::JP_NC_u16()  { return JP_flag_u16(CARRY, 0); }
 uint8_t Cpu::JP_C_u16()   { return JP_flag_u16(CARRY, 1); }
 
-
 /* JR_flag_i8
  * Add n to current pc if flag == condition.
  * Otherwise go to next address as normal. */
 uint8_t Cpu::JR_flag_i8(CpuFlags flag, uint8_t val)
 {
-  uint8_t i8 = bus->read(++pc);
+  int8_t i8 = bus->read(pc++);
 
   if (GetFlag(flag) == val) {
     pc += i8;
     return 12;
   } else {
-    ++pc;
     return 8;
   }
 }
@@ -78,7 +74,6 @@ uint8_t Cpu::JR_C_i8()   { return JR_flag_i8(CARRY, 1); }
 /* 00: NOP
  * Does nothing. */
 uint8_t Cpu::NOP() {
-  ++pc;
   return 4;
 }
 
@@ -88,7 +83,6 @@ uint8_t Cpu::CPL() {
   AssignFlag(ZERO, 1);
   AssignFlag(HALF_CARRY, 1);
   a = ~a;
-  ++pc;
   return 4;
 }
 
@@ -99,7 +93,6 @@ uint8_t Cpu::CCF() {
   AssignFlag(CARRY, ~cy);
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
-  ++pc;
   return 4;
 }
 
@@ -109,7 +102,6 @@ uint8_t Cpu::SCF() {
   AssignFlag(CARRY, 1);
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
-  ++pc;
   return 4;
 }
 
@@ -119,14 +111,12 @@ uint8_t Cpu::HALT() {
   // !!! INTERRUPT HANDLER HAS NOT BEEN WRITTEN
   // THIS FUNCTION MAY NEED TO BE MODIFIED WHEN THAT'S DONE
   cpuEnabled = false;
-  ++pc;
   return 4;
 }
 
 /* 27: DAA
  * Tbh I do not understand wtf this does */
  uint8_t Cpu::DAA() {
-  ++pc;
   return 4;
  }
 
@@ -144,7 +134,6 @@ uint8_t Cpu::STOP() {
  * executed. */
 uint8_t Cpu::DI() {
   disableInterrupts = 2; // magic number ugh
-  ++pc;
   return 4;
 }
 
@@ -154,7 +143,6 @@ uint8_t Cpu::DI() {
  * executed. */
 uint8_t Cpu::EI() {
   enableInterrupts = 2; // magic number ugh
-  ++pc;
   return 4;
 }
 
@@ -166,11 +154,9 @@ uint8_t Cpu::EI() {
     uint8_t lsb = bus->read(sp++);
     uint8_t msb = bus->read(sp++);
     pc = (msb << 8) | lsb;
-    ++pc;
     return 20;
   } else {
-    ++pc;
-    return 20;
+    return 8;
   }
  }
 
@@ -181,19 +167,17 @@ uint8_t Cpu::EI() {
     uint8_t lsb = bus->read(sp++);
     uint8_t msb = bus->read(sp++);
     pc = (msb << 8) | lsb;
-    ++pc;
     return 20;
   } else {
-    ++pc;
-    return 20;
+    return 8;
   }
  }
 
 /* C9: RET
  * Returns from a subroutine call. Pops address off stack and
- * jumps to address + 1. */
+ * jumps to address. */
 uint8_t Cpu::RET() {
-  pc = Pop16Bit() + 1;
+  pc = Pop16Bit();
   return 16;
 }
 
@@ -215,11 +199,9 @@ uint8_t Cpu::RETI() {
     uint8_t lsb = bus->read(sp++);
     uint8_t msb = bus->read(sp++);
     pc = (msb << 8) | lsb;
-    ++pc;
     return 20;
   } else {
-    ++pc;
-    return 20;
+    return 8;
   }
  }
 
@@ -230,88 +212,51 @@ uint8_t Cpu::RETI() {
     uint8_t lsb = bus->read(sp++);
     uint8_t msb = bus->read(sp++);
     pc = (msb << 8) | lsb;
-    ++pc;
     return 20;
   } else {
-    ++pc;
-    return 20;
+    return 8;
   }
  }
 
 /* ========== CALLS ========== */
-/* Cpu::_Call_u16
- * Helper function that handles pc adjustment and pc stack storage 
- * for CALL u16 opcodes. */
-void Cpu::Call_u16(void)
+/* CALL_flag_u16
+ * Load 16bit immediate operand into pc if flag == value. 
+ * Otherwise, move on to the next pc as normal. */
+uint8_t Cpu::CALL_flag_u16(CpuFlags flag, uint8_t value)
 {
-  // +2 because the next 2 bytes are immediates
-  Push16Bit(pc + 2);
-  pc = FetchNextTwoBytes();
-}
+  uint8_t lsb = bus->read(pc++);
+  uint8_t msb = bus->read(pc++);
+  uint16_t address = (msb << 8) | lsb;
 
-/* C4: CALL NZ, u16
- * If Z == 0, push PC to stack and call subroutine at 16bit addr */
-uint8_t Cpu::CALL_NZ_u16() {
-  bool flag = GetFlag(ZERO);
-  if (flag == 0) {
-    Call_u16();
-    return 24;
+  if (GetFlag(flag) == value) {
+    Push16Bit(pc);
+    pc = address;
+    return 16;
   } else {
-    pc += 2;
     return 12;
   }
 }
 
-/* CC: CALL Z, u16
- * If Z == 1, push PC to stack and call  */
-uint8_t Cpu::CALL_Z_u16() {
-  bool flag = GetFlag(ZERO);
-  if (flag == 1) {
-    Call_u16();
-    return 24;
-  } else {
-    pc += 2;
-    return 12;
-  }
-}
+uint8_t Cpu::CALL_NZ_u16()  { return CALL_flag_u16(ZERO, 0); }
+uint8_t Cpu::CALL_Z_u16()   { return CALL_flag_u16(ZERO, 1); }
+uint8_t Cpu::CALL_NC_u16()  { return CALL_flag_u16(CARRY, 0); }
+uint8_t Cpu::CALL_C_u16()   { return CALL_flag_u16(CARRY, 1); }
 
 /* CD: CALL u16
  * Push PC+1 to stack and jump to address  */
 uint8_t Cpu::CALL_u16() {
-  Call_u16();
+  uint8_t lsb = bus->read(pc++);
+  uint8_t msb = bus->read(pc++);
+  uint16_t address = (msb << 8) | lsb;
+  Push16Bit(pc);
+  pc = address;
   return 24;
-}
-
-/* D4: CALL NC, u16
- * If Carry == 0, push PC to stack and call  */
-uint8_t Cpu::CALL_NC_u16() {
-  bool flag = GetFlag(CARRY);
-  if (flag == 0) {
-    Call_u16();
-    return 24;
-  } else {
-    pc += 2;
-    return 12;
-  }
-}
-
-/* DC: CALL C, u16
- * If Carry == 1, push PC to stack and call  */
-uint8_t Cpu::CALL_C_u16() {
-  bool flag = GetFlag(CARRY);
-  if (flag == 1) {
-    Call_u16();
-    return 24;
-  } else {
-    pc += 2;
-    return 12;
-  }
 }
 
 /* ========== RESTARTS ========== */
 /* C7: Push present address to stack. 
  * Jump to address $0000 + n. ??? */
-// NOT SURE IF THSI IS RIGHT
+// THIS IS NOT CORRECT
 uint8_t Cpu::RST_00h() {
   // Push 
   Push16Bit(pc);

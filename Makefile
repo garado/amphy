@@ -1,5 +1,6 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = src/bus.cpp src/ppu.cpp src/main.cpp src/win.cpp src/cpu/cpu.cpp src/cpu/op*.cpp
+#OBJS = src/bus.cpp src/ppu.cpp src/main.cpp src/win.cpp src/cpu/cpu.cpp src/cpu/op*.cpp src/debug
+OBJS = src/*.cpp src/cpu/*.cpp src/utils/*.cpp
 
 #CC specifies which compiler we're using
 CC = g++
@@ -13,7 +14,8 @@ CC = g++
 #COMPILER_FLAGS specifies the additional compilation options we're using
 # -w suppresses all warnings
 # -Wl,-subsystem,windows gets rid of the console window
-COMPILER_FLAGS =  
+# -g lets you see line numbers in valgrind
+COMPILER_FLAGS = -g
 # -Wl,-subsystem,windows
 
 #LINKER_FLAGS specifies the libraries we're linking against
