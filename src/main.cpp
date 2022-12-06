@@ -7,90 +7,78 @@
 #include "ppu.h"
 #include "win.h"
 #include "bus.h"
-
-//#define DEBUG
+#include "defines.h"
 
 int main( int argc, char* args[] )
 {
+  Cpu* cpu;
+  Debugger* debug;
+  
   Window* win = new Window;
   Bus* bus = new Bus;
-  Cpu* cpu = new Cpu(bus);
-  Ppu* ppu = new Ppu(bus);
-  Debugger* debug = new Debugger(cpu);
-
+  Ppu* ppu = new Ppu(bus, win);
+  cpu   = new Cpu(bus, debug);
+  debug = new Debugger(cpu, bus, ppu);
 
   // Read ROM
-  int8_t status = bus->CopyRom("gba/testrom-06-l.gb");  
+  int8_t status = bus->CopyRom("gba/testrom-06-ld.gb");  
 
   if (status == -1) {
     std::cout << "Exiting :(" << std::endl;
     return -1;
   }
 
-  // //Start up SDL and create window
-  // if( !win->init() ) {
-  //   std::cout << "Failed to initialize" << std::endl;
+  // ly is initialized to 0x90 in blargg's tests?
+  bus->write(LY, 0x90);
+  bus->write(STAT, 0x81);
+
+  // Start SDL and create new window
+  // if (win->init() == EXIT_FAILURE) {
+  //   std::cerr << "SDL: Failed to initialize" << std::endl;
   // } else {
-  //   //Load media
-  //   if( !win->loadMedia() ) {
-  //     printf( "Failed to load media\n" );
+  //   // Load media
+  //   if( !win->LoadMedia() ) {
+  //     std::cerr << "SDL: Failed to load media" << std::endl;
   //   } else {
-  //     win->applyImg();
+  //     win->ApplyImg();
   //   }
   // }
 
-  // loop de loop
-  int cycleCount = 0;
-  int cyclesElapsed = 0;
+  // Main loop
   for (;;) {
     // Run CPU
-    bool result;
-    try {
-
-      #ifdef DEBUG
-      debug->step();
-      #endif
-
-      uint8_t cyclesElapsed = cpu->execute();
-      cpu->AddCycles(cyclesElapsed);
-      
-      if (result == EXIT_FAILURE) {
-        debug->Regdump();
-        break;
-      } else {
-        debug->Regdump();
-      }
-    } catch (std::out_of_range &oor) {
-      std::cout << "Fatal CPU error: exiting" << std::endl;
+    bool cpu_exec_result = cpu->execute();
+    if (cpu_exec_result == FAILURE) {
+      std::cout << __PRETTY_FUNCTION__ << ": Fatal CPU error: exiting" << std::endl;
       debug->Regdump();
       break;
+    } else {
+      //debug->step();
     }
-
+      
     // Run PPU
-    try {
-      ppu->execute(cyclesElapsed);
-    } catch (...) {
-      std::cout << "Fatal PPU error: exiting" << std::endl;
+    uint8_t cycles_elapsed = cpu->get_last_cycles();
+    bool ppu_exec_result = ppu->Execute(cycles_elapsed);
+    if (ppu_exec_result == FAILURE) {
+      std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error: exiting" << std::endl;
       break;
     }
-    // if (bus->read(0xFF44) == 0x01) {
-    //   std::cout << "LY incremented, finally" << std::endl;
-    //   std::cout << "instrs executed: " << yuh << std::endl;
-    //   std::cout << "cycles: " << cycleCount << std::endl;
-    //   cpu->Regdump();
-    //   // break;
-    // }
 
-    // blarggs test - serial output
-    // if (bus->read(0xFF02) == 0x81) {
-    //   char c = bus->read(0xFF01);
-    //   printf("%c", c);
-    //   bus->write(0xFF02, 0);
-    // }
+    // Read serial output from Blargg's test roms
+    if (bus->read(0xFF02) == 0x81) {
+      char c = bus->read(0xFF01);
+      std::cout << c << std::endl;
+      bus->write(0xFF02, 0);
+    }
   }
 
   // Free resources and close SDL
-  win->close();
+  delete(cpu);
+  delete(bus);
+  delete(debug);
+  delete(ppu);
 
-  return 0;
+  // win->close();
+
+  return EXIT_SUCCESS;
 }

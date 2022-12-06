@@ -183,38 +183,32 @@ void Cpu::SetSubFlags(uint16_t a, uint16_t b) {
  * @param     None
  * @brief     Handles execution of all opcodes. */
 uint8_t Cpu::execute() {
-  //if (!cpuEnabled) return EXIT_SUCCESS;
-  
   op = bus->read(pc);
   ++pc;
 
-  // Index into opcode function table and execute opcode
-  bool status;
-  
-  try {
-    // I dont know how to check if function table entry is null lmao
+
+  // Check for 8bit or 16bit opcode
+  // 16bit opcodes are prefixed with 0xCB
+  bool is16bit = (op == 0xCB);
+  if (is16bit) {
+    op = bus->read(pc);
+    Decode16bitOpcode(op);
+  } else {
+    // kind of messy - refactor later
+
+    // Index into 8-bit opcode function table and execute opcode
+    bool status;
+    
+    // I dont know how to check if jump table entry is null lmao
     // So here is this
-    std::string opcode_name = opcode_names[op];
+    std::string opcode_name = opcode_8bit_names[op];
     if (opcode_name == "NULL") {
-      std::cout << __PRETTY_FUNCTION__ << ": Trying to access NULL opcode " << std::hex << (int) op 
-                << "Exiting..." << std::endl;
+      std::cout << __PRETTY_FUNCTION__ << ": Trying to access NULL opcode 0x" << std::hex << (int) op << std::endl;
+      std::cout << "Current pc is 0x" << std::hex << (int) pc << std::endl;
       return FAILURE;
     } else {
-      (this->*opcodes[op])();
+      (this->*opcodes_8bit[op])();
     }
-  } catch (const std::exception &exc) {
-    std::cerr << "Cpu::Execute: error" << std::endl;
-    std::cerr << exc.what() << std::endl;
-
-    std::cout << "Opcode 0x" << std::hex << std::setw(2) << std::setfill('0') << op <<
-              ": " << opcode_names[op] << std::endl;
-    std::cout << "af: " << std::hex << std::setw(4) << std::setfill('0') << af() << std::endl;
-    std::cout << "bc: " << std::hex << std::setw(4) << std::setfill('0') << bc() << std::endl;
-    std::cout << "de: " << std::hex << std::setw(4) << std::setfill('0') << de() << std::endl;
-    std::cout << "hl: " << std::hex << std::setw(4) << std::setfill('0') << hl() << std::endl;
-    std::cout << "sp: " << std::hex << std::setw(4) << std::setfill('0') << sp << std::endl;
-    std::cout << "pc: " << std::hex << std::setw(4) << std::setfill('0') << pc << std::endl;
-    std::cout << std::endl;
   }
 
   // janky di instruction implementation

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../bus.h"
+#include "../utils/debug.h"
 
 #ifndef CPU_H
 #define CPU_H
@@ -54,9 +55,9 @@ class Cpu
     bool ime_prev = true;
 
   public:
-    // Array of function pointers to opcodes.
-    typedef void (Cpu::*Opcode)();
-    Opcode opcodes[256] = { 
+    // Array of function pointers to 8-bit opcodes.
+    typedef void (Cpu::*Opcode_8bit)();
+    Opcode_8bit opcodes_8bit[256] = { 
     //  +0              +1                +2                +3                +4                  +5                +6                +7                +8                  +9                +A                +B              +C                +D              +E                +F
       &Cpu::NOP,        &Cpu::LD_BC_u16,  &Cpu::LD_atBC_A,  &Cpu::INC_BC,     &Cpu::INC_B,        &Cpu::DEC_B,      &Cpu::LD_B_u8,    &Cpu::RLCA,       &Cpu::LD_atu16_SP,  &Cpu::ADD_HL_BC,  &Cpu::LD_A_atBC,  &Cpu::DEC_BC,   &Cpu::INC_C,      &Cpu::DEC_C,    &Cpu::LD_C_u8,    &Cpu::RRCA,     // 00+
       &Cpu::STOP,       &Cpu::LD_DE_u16,  &Cpu::LD_atDE_A,  &Cpu::INC_DE,     &Cpu::INC_D,        &Cpu::DEC_D,      &Cpu::LD_D_u8,    &Cpu::RLA,        &Cpu::JR_i8,        &Cpu::ADD_HL_DE,  &Cpu::LD_A_atDE,  &Cpu::DEC_DE,   &Cpu::INC_E,      &Cpu::DEC_E,    &Cpu::LD_E_u8,    &Cpu::RRA,      // 10+
@@ -76,7 +77,7 @@ class Cpu
       &Cpu::LDH_A_atu8, &Cpu::POP_AF,     &Cpu::LDH_A_atC,  &Cpu::DI,         NULL,               &Cpu::PUSH_AF,    &Cpu::OR_A_u8,    &Cpu::RST_30h,    &Cpu::LD_HL_SP_i8,  &Cpu::LD_SP_HL,   &Cpu::LD_A_atu16, &Cpu::EI,       NULL,             NULL,           &Cpu::CP_A_u8,    &Cpu::RST_38h,  // F0+
     };
 
-    const char* opcode_names[256] = { 
+    const char* opcode_8bit_names[256] = { 
       // +0         +1            +2            +3            +4              +5            +6            +7            +8              +9            +A            +B          +C            +D          +E            +F
       "NOP",        "LD_BC_u16",  "LD_atBC_A",  "INC_BC",     "INC_B",        "DEC_B",      "LD_B_u8",    "RLCA",       "LD_atu16_SP",  "ADD_HL_BC",  "LD_A_atBC",  "DEC_BC",   "INC_C",      "DEC_C",    "LD_C_u8",    "RRCA",     // 00+
       "STOP",       "LD_DE_u16",  "LD_atDE_A",  "INC_DE",     "INC_D",        "DEC_D",      "LD_D_u8",    "RLA",        "JR_i8",        "ADD_HL_DE",  "LD_A_atDE",  "DEC_DE",   "INC_E",      "DEC_E",    "LD_E_u8",    "RRA",      // 10+
@@ -96,7 +97,17 @@ class Cpu
       "LDH_A_atu8", "POP_AF",     "LDH_A_atC",  "DI",         "NULL",         "PUSH_AF",    "OR_A_u8",    "RST_30h",    "LD_HL_SP_i8",  "LD_SP_HL",   "LD_A_atu16", "EI",       "NULL",       "NULL",     "CP_A_u8",    "RST_38h",  // F0+
     };
 
+
+    // Array of function pointers to 16-bit opcodes.
+    typedef void (Cpu::*Opcode_16bit)();
+    Opcode_16bit opcodes_16bit[256] = { 
+    };
+
+    const char* opcode_16bit_names[256] = { 
+    };
+
   private:
+    // =========== 8-bit ===============
     // Rotate/shift
     void RLA();
     void RRA();
@@ -427,6 +438,22 @@ class Cpu
     uint8_t   FetchNextByte(void);
     uint16_t  FetchNextTwoBytes(void);
 
+    // =========== 16-bit ===============
+    uint8_t * Decode16bitReg(uint8_t opcode);
+    void Decode16bitOpcode(uint8_t opcode);
+    uint8_t Decode16bitBitPos(uint8_t opcode);
+    void RLC(uint8_t * reg);
+    void RRC(uint8_t * reg);
+    void RL(uint8_t * reg);
+    void RR(uint8_t * reg);
+    void SLA(uint8_t * reg);
+    void SRA(uint8_t * reg);
+    void SWAP(uint8_t * reg);
+    void SRL(uint8_t * reg);
+    void BIT_n(uint8_t * reg, uint8_t bitpos);
+    void RES_n(uint8_t * reg, uint8_t bitpos);
+    void SET_n(uint8_t * reg, uint8_t bitpos);
+
   public:
     uint8_t execute();
     bool GetFlag(CpuFlags flag);
@@ -449,14 +476,17 @@ class Cpu
     uint16_t getSp() const { return sp; }
     uint16_t getPc() const { return pc; }
     uint8_t getOp() const { return op; }
+    uint8_t get_last_cycles() const { return cycles_last_taken; }
 
   public:
-    Cpu(Bus* bus_) {
-      bus = bus_; 
+    Cpu(Bus* bus_, Debugger* debug_) {
+      bus = bus_;
+      debugger = debug_;
     }
 
   private:
     Bus* bus;
+    Debugger* debugger;
 };
 
 #endif
