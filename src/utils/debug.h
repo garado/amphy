@@ -10,12 +10,14 @@
 
 class Cpu;
 class Bus;
+class Ppu;
 
 class Debugger
 {
   private:
     Cpu* cpu;
     Bus* bus;
+    Ppu* ppu;
     int af, bc, de, hl;
     int sp, pc;
     int op;
@@ -26,14 +28,15 @@ class Debugger
 
   public:
     void Regdump();
+    void RegdumpGBDoc();
     void debugger();
     void step();
     void Stackdump(void);
-    Debugger(Cpu* cpu_, Bus* bus_) {
+    Debugger(Cpu* cpu_, Bus* bus_, Ppu* ppu_) {
       bus = bus_;
       cpu = cpu_;
+      ppu = ppu_;
     }
-    ~Debugger();
 };
 
 #endif

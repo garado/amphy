@@ -15,23 +15,23 @@ class Cpu
 {
   private:
     // Internal registers
-    uint8_t a = 0x11; // blargg test rom init
-    uint8_t f = 0x80;
-    uint8_t b = 0x00;
-    uint8_t c = 0x00;
-    uint8_t d = 0xFF;
-    uint8_t e = 0x56;
-    uint8_t h = 0x00;
-    uint8_t l = 0x0D;
-
-    // uint8_t a = 0x01;
-    // uint8_t f = 0xB0;
+    // uint8_t a = 0x11; // blargg test rom init
+    // uint8_t f = 0x80;
     // uint8_t b = 0x00;
-    // uint8_t c = 0x13;
-    // uint8_t d = 0x00;
-    // uint8_t e = 0xD8;
-    // uint8_t h = 0x01;
-    // uint8_t l = 0x4D;
+    // uint8_t c = 0x00;
+    // uint8_t d = 0xFF;
+    // uint8_t e = 0x56;
+    // uint8_t h = 0x00;
+    // uint8_t l = 0x0D;
+    
+    uint8_t a = 0x01;
+    uint8_t f = 0xB0;
+    uint8_t b = 0x00;
+    uint8_t c = 0x13;
+    uint8_t d = 0x00;
+    uint8_t e = 0xD8;
+    uint8_t h = 0x01;
+    uint8_t l = 0x4D;
 
     uint8_t op = 0;     // opcode
     uint16_t sp = 0xFFFE; // stack pointer

@@ -47,8 +47,8 @@ uint8_t * Cpu::Decode16bitReg(uint8_t opcode)
  * @brief     Returns a bit position for the BIT, SET, and RES instructions to operate on. */
 uint8_t Cpu::Decode16bitBitPos(uint8_t opcode)
 {
-  uint8_t msb = (opcode >> 8) & 0xFF;
-  uint8_t lsb = opcode & 0xFF;
+  uint8_t msb = (opcode >> 4) & 0xF;
+  uint8_t lsb = opcode & 0xF;
 
   switch (msb) {
   case 0x4: // bit
@@ -91,7 +91,7 @@ uint8_t Cpu::Decode16bitBitPos(uint8_t opcode)
  * @return    none */ 
 void Cpu::Decode16bitOpcode(uint8_t opcode)
 {
-  uint8_t msb = (opcode >> 8) & 0xF;
+  uint8_t msb = (opcode >> 4) & 0xF;
   uint8_t lsb = opcode & 0xF;
 
   uint8_t * reg = Decode16bitReg(opcode);
@@ -108,23 +108,23 @@ void Cpu::Decode16bitOpcode(uint8_t opcode)
 
   switch (msb) {
   case 0x0: 
-    if (lsb < 0x9)  RLC(reg);
-    if (lsb >= 0x9) RRC(reg);
+    if (lsb < 0x8)  RLC(reg);
+    if (lsb >= 0x8) RRC(reg);
     break;
 
   case 0x1:
-    if (lsb < 0x9)  RL(reg);
-    if (lsb >= 0x9) RR(reg);
+    if (lsb < 0x8)  RL(reg);
+    if (lsb >= 0x8) RR(reg);
     break; 
   
   case 0x2:
-    if (lsb < 0x9)  SLA(reg);
-    if (lsb >= 0x9) SRA(reg);
+    if (lsb < 0x8)  SLA(reg);
+    if (lsb >= 0x8) SRA(reg);
     break;
 
   case 0x3:
-    if (lsb < 0x9)  SWAP(reg);
-    if (lsb >= 0x9) SRL(reg);
+    if (lsb < 0x8)  SWAP(reg);
+    if (lsb >= 0x8) SRL(reg);
     break;
 
   case 0x4:
@@ -160,7 +160,7 @@ void Cpu::Decode16bitOpcode(uint8_t opcode)
  * @return    none */ 
 void Cpu::RLC(uint8_t * reg) {
   uint8_t oldbit7 = *reg >> 7;
-  *reg <<= 1;;
+  *reg <<= 1;
   *reg |= oldbit7;
   AssignFlag(CARRY, oldbit7);
   AssignFlag(ZERO, *reg == 0);
@@ -176,8 +176,8 @@ void Cpu::RLC(uint8_t * reg) {
  * @return    none */ 
 void Cpu::RRC(uint8_t * reg) {
   uint8_t oldbit0 = *reg & 0x1;
-  *reg >>= 1;;
-  *reg |= oldbit0;
+  *reg >>= 1;
+  *reg |= oldbit0 << 7;
   AssignFlag(CARRY, oldbit0);
   AssignFlag(ZERO, *reg == 0);
   AssignFlag(HALF_CARRY, 0);
@@ -189,7 +189,7 @@ void Cpu::RRC(uint8_t * reg) {
  * @param     reg   Pointer to value to rotate 
  * @brief     Rotate contents of reg to the left through CY. The previous contents
  *            of the carry flag are copied to bit 0 of the register.
- *            The previous bit 7 of the register are copied to the carry flag.
+ *            The previous bit 7 of the register is copied to the carry flag.
  * @return    none */ 
 void Cpu::RL(uint8_t * reg) {
   uint8_t oldbit7 = *reg >> 7;
@@ -206,12 +206,12 @@ void Cpu::RL(uint8_t * reg) {
  * @param     reg   Pointer to value to rotate 
  * @brief     Rotate contents of reg to the right through CY. The previous contents
  *            of the carry flag are copied to bit 7 of the register.
- *            The previous bit 0 of the register are copied to the carry flag.
+ *            The previous bit 0 of the register is copied to the carry flag.
  * @return    none */ 
 void Cpu::RR(uint8_t * reg) {
   uint8_t oldbit0 = *reg & 0x1;
-  *reg >>= 1;;
-  *reg |= GetFlag(CARRY);
+  *reg >>= 1;
+  *reg |= (GetFlag(CARRY) << 7);
   AssignFlag(CARRY, oldbit0);
   AssignFlag(ZERO, *reg == 0);
   AssignFlag(HALF_CARRY, 0);
@@ -229,6 +229,7 @@ void Cpu::SLA(uint8_t * reg)
   uint8_t bit7 = *reg >> 7;
   AssignFlag(CARRY, bit7);
   *reg <<= 1;
+  *reg &= 0xFE;
   AssignFlag(ZERO, *reg == 0);
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
@@ -244,7 +245,7 @@ void Cpu::SLA(uint8_t * reg)
 void Cpu::SRA(uint8_t * reg)
 {
   uint8_t oldbit7 = *reg >> 7;
-  AssignFlag(CARRY, oldbit7);
+  AssignFlag(CARRY, *reg & 0x1);
   *reg >>= 1;
   *reg |= (oldbit7 << 7);
   AssignFlag(ZERO, *reg == 0);
@@ -278,10 +279,11 @@ void Cpu::SRL(uint8_t * reg)
   uint8_t oldbit0 = *reg & 0x1;
   AssignFlag(CARRY, oldbit0);
   *reg >>= 1;
+  *reg &= 0x7F;
   AssignFlag(ZERO, *reg == 0);
-  AssignFlag(CARRY, 0);
+  AssignFlag(CARRY, oldbit0);
   AssignFlag(HALF_CARRY, 0);
-  AssignFlag(SUB, oldbit0);
+  AssignFlag(SUB, 0);
   cycles_last_taken = 8;
 }
 

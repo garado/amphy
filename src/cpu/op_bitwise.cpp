@@ -49,7 +49,7 @@ void Cpu::AND_A_u8() {
   cycles_last_taken = 8;
 }
 
-/* OR n
+/* F6: OR n
  * Logical OR reg n with A; store result in A. */
 void Cpu::OR_A_n(uint8_t * reg)
 {
@@ -107,13 +107,13 @@ void Cpu::XOR_A_u8() {
 
 
 /* XOR n
- * Logical OR reg n with A; store result in A. */
+ * Logical XOR reg n with A; store result in A. */
 void Cpu::XOR_A_n(uint8_t * reg)
 {
   a ^= *reg;
   AssignFlag(ZERO, (a==0));
   AssignFlag(SUB, 0);
-  AssignFlag(HALF_CARRY, 1);
+  AssignFlag(HALF_CARRY, 0);
   AssignFlag(CARRY, 0);
   cycles_last_taken = 4;
 }

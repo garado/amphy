@@ -256,7 +256,7 @@ void Cpu::CP_A_atHL() {
  *  To compare, the Game Boy subtracts A - n, with the result 
  *  thrown away. If (A-n) == 0 they are equal. */
 void Cpu::CP_A_u8() {
-  uint8_t val = bus->read(++pc);
+  uint8_t val = bus->read(pc++);
   SetSubFlags(a, val);
   cycles_last_taken = 8;
 }

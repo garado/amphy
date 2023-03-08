@@ -7,10 +7,10 @@
 
 /* ========== JUMPS ========== */
 
-/* E9: JP (HL)
- * Jump to address (HL). */
+/* E9: JP HL
+ * Set pc to HL. */
 void Cpu::JP_HL() {
-  pc = bus->read(hl());
+  pc = hl();
   cycles_last_taken = 4;
 }
 

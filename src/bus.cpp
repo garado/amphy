@@ -1,4 +1,7 @@
 
+/* █▄▄ █░█ █▀ */ 
+/* █▄█ █▄█ ▄█ */
+
 #include <iomanip>
 #include <stdio.h>
 #include <iostream>
@@ -7,22 +10,46 @@
 #include <vector>
 
 #include "bus.h"
+#include "defines.h"
 
 #define CART_TYPE 0x147
 
 typedef enum CartType { 
-  ROM, MBC1, MBC1_RAM, MBC1_RAM_BAT, MBC2 = 0x05, MBC2_BAT, 
-  ROM_RAM = 0x08, ROM_RAM_BAT, MMM01 = 0x0B, MMM01_RAM, 
-  MMM01_RAM_BAT, MBC3_TIM_BAT = 0x0F, MBC3_TIM_RAM_BAT,
-  MBC3, MBC3_RAM, MBC3_RAM_BAT, MBC5 = 0x19, MBC5_RAM = 0x1A,
-  MBC5_RAM_BAT, MBC5_RUM, MBC5_RUM_RAM, MBC5_RUM_RAM_BAT,
-  MBC6 = 0x20, MBC7_SEN_RUM_RAM_BAR = 0x22
+  ROM,
+  MBC1,
+  MBC1_RAM,
+  MBC1_RAM_BAT,
+  MBC2 = 0x05,
+  MBC2_BAT,
+  ROM_RAM = 0x08,
+  ROM_RAM_BAT,
+  MMM01 = 0x0B,
+  MMM01_RAM,
+  MMM01_RAM_BAT,
+  MBC3_TIM_BAT = 0x0F,
+  MBC3_TIM_RAM_BAT,
+  MBC3,
+  MBC3_RAM,
+  MBC3_RAM_BAT,
+  MBC5 = 0x19,
+  MBC5_RAM = 0x1A,
+  MBC5_RAM_BAT,
+  MBC5_RUM,
+  MBC5_RUM_RAM,
+  MBC5_RUM_RAM_BAT,
+  MBC6 = 0x20,
+  MBC7_SEN_RUM_RAM_BAR = 0x22
 } CartType;
 
 /* Bus::read
  * Memory read function
  */
 uint8_t Bus::read(uint16_t address) const {
+  // Temporary for gbdoc
+  if (address == 0xFF44) {
+    return 0x90;
+  }
+
   if (address <= 0x3FFF) {
     return rom_00.at(address);
   } else if (address <= 0x7FFF) {
@@ -51,8 +78,8 @@ uint8_t Bus::read(uint16_t address) const {
     return int_enable;
   }
 
-  std::cout << "COULDNT READ MEMORY" << std::endl;
-  return 0;
+  std::cout << __PRETTY_FUNCTION__ << ": Couldn't read memory" << std::endl;
+  return FAILURE;
 }
 
 /* Bus::write
@@ -92,12 +119,13 @@ void Bus::write(uint16_t address, uint8_t val) {
  * Copies ROM from .gb file to memory.
  * MBC unimplemented. suuuuper basic.
  */
-int8_t Bus::CopyRom(std::string fname) {
+uint8_t Bus::CopyRom(std::string fname) {
   // Open rom for reading
-  std::ifstream infile("gba/bgbtest.gb", std::ios::binary);
+  std::ifstream infile(fname, std::ios::binary);
+  
   if (!infile.is_open()) {
     std::cout << "ROM could not be opened" << std::endl;
-    return -1;
+    return FAILURE;
   }
 
   // Copy rom into vector
@@ -127,22 +155,35 @@ int8_t Bus::CopyRom(std::string fname) {
     rom_01.insert(rom_01.begin(), first, last);
   }
 
-  /* // Print copied rom contents
-  int count = 0;
-  int totalCnt = 0;
-  for (int i : rom_00) {
-    if (count % 4 == 0) {
-      count = 0;
-      if (count != 0) {
-        std::cout << std::endl;
-      }
-      std::cout << "0x" << std::setfill('0') << std::hex << std::setw(2) << totalCnt << ": ";
-      totalCnt += 4;
-    }
-    std::cout << std::hex << (int) i << ' ';
-    ++count;
-  }
-  */
+  return SUCCESS;
+}
 
-  return 1;
+// i DO NOT know if this works
+uint8_t * Bus::GetAddressPointer(uint16_t address)
+{
+  std::vector <uint8_t>::iterator it;
+  if (address <= 0x3FFF) {
+    *it = rom_00.at(address);
+  } else if (address <= 0x7FFF) {
+    *it = rom_01.at(address - 0x4000);
+  } else if (address <= 0x9FFF) {
+    *it = vram.at(address - 0x8000);
+  } else if (address <= 0xBFFF) {
+    *it = ext_ram.at(address - 0xA000);
+  } else if (address <= 0xCFFF) {
+    *it = wram_0.at(address - 0xC000);
+  } else if (address <= 0xDFFF) {
+    *it = wram_1.at(address - 0xD000);
+  } else if (address <= 0xFDFF) {
+    *it = ech_ram.at(address - 0xE000);
+  } else if (address <= 0xFE9F) {
+    *it = oam.at(address - 0xFE00);
+  } else if (address <= 0xFF7F) {
+    *it = io_reg.at(address - 0xFF00);
+  } else if (address <= 0xFFFE) {
+    *it = hram.at(address - 0xFF80);
+  } else if (address <= 0xFFFF) {
+    *it = int_enable;
+  }
+  return &(*it);
 }

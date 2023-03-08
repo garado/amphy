@@ -6,6 +6,16 @@
 #ifndef BUS_H
 #define BUS_H
 
+#define ROM_B0_START_ADDR  0x0000
+#define ROM_B1_START_ADDR  0x4000
+#define VRAM_START_ADDR    0x8000
+#define EXTRAM_START_ADDR  0xA000
+#define WRAM0_START_ADDR   0xC000
+#define WRAM1_START_ADDR   0xD000
+#define ECHORAM_START_ADDR 0xE000
+#define OAM_START_ADDR     0xFE00
+#define IO_START_ADDR      0xFF00
+
 class Bus
 {
   private:
@@ -32,6 +42,8 @@ class Bus
     std::vector<uint8_t> ech_ram = std::vector<uint8_t>(7680);
     
     // FE00-FE9F
+    // This is the CPU's copy of OAM. In the actual hardware, a
+    // DMA transfer copies this data to the PPU's OAM.
     std::vector<uint8_t> oam = std::vector<uint8_t>(160);
     
     // IO registers FF00-FF7F
@@ -46,7 +58,8 @@ class Bus
   public:
     uint8_t read(uint16_t address) const;
     void    write(uint16_t address, uint8_t val);
-    int8_t  CopyRom(std::string fname);
+    uint8_t  CopyRom(std::string fname);
+    uint8_t * GetAddressPointer(uint16_t address);
 };
 
 #endif

@@ -1,4 +1,4 @@
-
+  
 /* ░█▀▀░█▀▄░█▀█░█▀█░█░█░▀█▀░█▀▀░█▀▀*/ 
 /* ░█░█░█▀▄░█▀█░█▀▀░█▀█░░█░░█░░░▀▀█*/
 /* ░▀▀▀░▀░▀░▀░▀░▀░░░▀░▀░▀▀▀░▀▀▀░▀▀▀*/
@@ -134,7 +134,7 @@ void Ppu::VBlank(void)
   uint8_t ly = bus->read(LY);
   if (cnt <= 0) {
     bus->write(LY, ++ly);
-    cnt = 228;
+    cnt = 226;
   }
 
   if (ly >= PX_TRANSFER_Y_DURATION + VBLANK_Y_DURATION) {

@@ -1,3 +1,5 @@
+/* █▀▀ █▀█ █░█ */ 
+/* █▄▄ █▀▀ █▄█ */
 
 #include <iomanip>
 #include <stdio.h>
@@ -183,15 +185,13 @@ void Cpu::SetSubFlags(uint16_t a, uint16_t b) {
  * @param     None
  * @brief     Handles execution of all opcodes. */
 uint8_t Cpu::execute() {
-  op = bus->read(pc);
-  ++pc;
-
+  op = bus->read(pc++);
 
   // Check for 8bit or 16bit opcode
   // 16bit opcodes are prefixed with 0xCB
   bool is16bit = (op == 0xCB);
   if (is16bit) {
-    op = bus->read(pc);
+    op = bus->read(pc++);
     Decode16bitOpcode(op);
   } else {
     // kind of messy - refactor later
