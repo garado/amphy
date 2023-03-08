@@ -5,12 +5,14 @@
 #include "cpu.h"
 #include "../defines.h"
 
+#define NO_SET_ZERO false
+
 /* ========== 8-BIT ALU ========== */
 
 /* 34: INC HL
  * Increment contents of (HL). */
 void Cpu::INC_atHL() {
-  uint8_t val = bus->read( hl() );
+  uint8_t val = bus->read(hl());
   SetAddFlags(val, 1);
   ++val;
   bus->write(hl(), val);
@@ -147,9 +149,21 @@ void Cpu::SUB_A_L() { SUB_A_n(&l); }
  * A = A - (R1 + CY) */
 void Cpu::SBC_A_n(uint8_t * reg)
 {
-  uint8_t val = *reg + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
+  // Can't use set sub flags because that's only for adding 2 numbers
+  AssignFlag(SUB, 1);
+
+  // Half carry
+  uint16_t hc_diff = (a & 0xF) - ((*reg & 0xF) + GetFlag(CARRY));
+  AssignFlag(HALF_CARRY, hc_diff & 0x10);
+
+  // Carry
+  uint16_t diff = a - (*reg + GetFlag(CARRY));
+  AssignFlag(CARRY, diff > 0xFF);
+
+  // Zero
+  a = diff & 0xFF;
+  AssignFlag(ZERO, a == 0);
+ 
   cycles_last_taken = 4;
 }
 
@@ -176,9 +190,22 @@ void Cpu::SBC_A_atHL() {
  *  A = A - (u8 + CY) */
 void Cpu::SBC_A_u8() {
   uint8_t u8 = bus->read(pc++);
-  uint8_t val = u8 + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
+
+  // Can't use set sub flags because that's only for adding 2 numbers
+  AssignFlag(SUB, 1);
+
+  // Half carry
+  uint16_t hc_diff = (a & 0xF) - ((u8 & 0xF) + GetFlag(CARRY));
+  AssignFlag(HALF_CARRY, hc_diff & 0x10);
+
+  // Carry
+  uint16_t diff = a - (u8 + GetFlag(CARRY));
+  AssignFlag(CARRY, diff> 0xFF);
+
+  // Zero
+  a = diff & 0xFF;
+  AssignFlag(ZERO, a == 0);
+ 
   cycles_last_taken = 4;
 }
 
@@ -187,9 +214,21 @@ void Cpu::SBC_A_u8() {
  * A = A + (R1 + CY) */
 void Cpu::ADC_A_n(uint8_t * reg)
 {
-  uint8_t val = *reg + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
+  // Can't use set add flags because that's only for adding 2 numbers
+  AssignFlag(SUB, 0);
+
+  // Half carry
+  uint16_t hc_sum = (a & 0xF) + (*reg & 0xF) + (GetFlag(CARRY) & 0xF);
+  AssignFlag(HALF_CARRY, hc_sum > 0xF);
+
+  // Carry
+  uint16_t sum = a + *reg + GetFlag(CARRY);
+  AssignFlag(CARRY, sum > 0xFF);
+
+  // Zero
+  a = sum & 0xFF;
+  AssignFlag(ZERO, a == 0);
+ 
   cycles_last_taken = 4;
 }
 
@@ -206,20 +245,33 @@ void Cpu::ADC_A_L() { ADC_A_n(&l); }
  * A = A + ((HL) + CY) */
 void Cpu::ADC_A_atHL() {
   uint16_t address = hl();
-  uint8_t val = bus->read(address) + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
+  uint8_t val = bus->read(address);
+  SetAddFlags(a, val, GetFlag(CARRY));
+  a += val + GetFlag(CARRY);
   cycles_last_taken = 8;
 }
 
-/* ADC A, u8
+/* CE: ADC A, u8
  * Add u8 + carry to A. 
  * A = A + (u8 + CY) */
 void Cpu::ADC_A_u8() {
   uint8_t u8 = bus->read(pc++);
-  uint8_t val = u8 + GetFlag(CARRY);
-  SetAddFlags(a, val);
-  a += val;
+
+  // Can't use set add flags because that's only for adding 2 numbers
+  AssignFlag(SUB, 0);
+
+  // Half carry
+  uint16_t hc_sum = (a & 0xF) + (u8 & 0xF) + (GetFlag(CARRY) & 0xF);
+  AssignFlag(HALF_CARRY, hc_sum > 0xF);
+
+  // Carry
+  uint16_t sum = a + u8 + GetFlag(CARRY);
+  AssignFlag(CARRY, sum > 0xFF);
+
+  // Zero
+  a = sum & 0xFF;
+  AssignFlag(ZERO, a == 0);
+ 
   cycles_last_taken = 4;
 }
 
@@ -276,8 +328,8 @@ void Cpu::DEC_nm(uint8_t * upper_reg, uint8_t * lower_reg)
 }
 
 void Cpu::DEC_BC() { DEC_nm(&b, &c); }
-void Cpu::DEC_DE() { DEC_nm(&b, &c); }
-void Cpu::DEC_HL() { DEC_nm(&b, &c); }
+void Cpu::DEC_DE() { DEC_nm(&d, &e); }
+void Cpu::DEC_HL() { DEC_nm(&h, &l); }
 
 void Cpu::DEC_SP() {
   --sp;
@@ -307,29 +359,27 @@ void Cpu::INC_SP() {
   cycles_last_taken = 8;
 }
 
-/* 09: Add the contents of register pair nm to the contents of register pair HL,
+/* Add the contents of register pair nm to the contents of register pair HL,
  * and store the results in register pair HL. */
 void Cpu::ADD_HL_nm(uint8_t * upper, uint8_t * lower)
 {
   uint16_t regpair = (*upper << 8) | *lower;
   uint16_t sum = hl() + regpair;
-  SetAddFlags(hl(), regpair);
+  SetAddFlags(hl(), regpair, NO_SET_ZERO);
   h = sum >> 8;
   l = sum & 0xFF;
-  AssignFlag(SUB, 0);
   cycles_last_taken = 8;
 }
 
-void Cpu::ADD_HL_BC() { ADD_HL_nm(&b, &c); }
-void Cpu::ADD_HL_DE() { ADD_HL_nm(&d, &e); }
-void Cpu::ADD_HL_HL() { ADD_HL_nm(&h, &l); }
+void Cpu::ADD_HL_BC() { ADD_HL_nm(&b, &c); } // 09
+void Cpu::ADD_HL_DE() { ADD_HL_nm(&d, &e); } // 19
+void Cpu::ADD_HL_HL() { ADD_HL_nm(&h, &l); } // 29
 
 void Cpu::ADD_HL_SP() {
   uint16_t sum = hl() + sp;
-  SetAddFlags(hl(), sp);
+  SetAddFlags(hl(), sp, NO_SET_ZERO);
   h = sum >> 8;
   l = sum & 0xFF;
-  AssignFlag(SUB, 0);
   cycles_last_taken = 8;
 }
 

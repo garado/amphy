@@ -402,7 +402,7 @@ class Cpu
     void SetHalfCarrySub(uint16_t a, uint16_t b);
     void SetCarryAdd(uint16_t a, uint16_t b);
     void SetCarrySub(uint16_t a, uint16_t b);
-    void SetAddFlags(uint16_t a, uint16_t b);
+    void SetAddFlags(uint16_t a, uint16_t b, bool setzero);
     void SetSubFlags(uint16_t a, uint16_t b);
 
     void LD_n_atHL(uint8_t * reg);

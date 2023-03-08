@@ -37,10 +37,10 @@ void Cpu::AND_A_atHL() {
   cycles_last_taken = 8;
 }
 
-/* AND_A_u8
+/* E6: AND_A_u8
  * Logical AND n with A, store result in A. */
 void Cpu::AND_A_u8() {
-  uint8_t val = bus->read(++pc);
+  uint8_t val = bus->read(pc++);
   a &= val;
   AssignFlag(ZERO, (a==0));
   AssignFlag(SUB, 0);

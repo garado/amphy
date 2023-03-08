@@ -69,7 +69,8 @@ bool Cpu::GetFlag(CpuFlags flag) {
  * @brief     Sets the half carry flag for the addition of 2 8-bit numbers. 
  *            This occurs when there is a carry from the 3rd to the 4th bit. */
 void Cpu::SetHalfCarryAdd(uint8_t a, uint8_t b) {
-  bool val = (((a & 0xF) + (b & 0xF)) & 0x10) == 0x10;
+  uint16_t sum = (a & 0xF) + (b & 0xF);
+  bool val = sum > 0xF;
   AssignFlag(HALF_CARRY, val);
 }
 
@@ -127,10 +128,10 @@ void Cpu::SetSubFlags(uint8_t a, uint8_t b) {
 
 /* Cpu::SetHalfCarryAdd
  * Set half carry flag for addition.
- * For 16-bit numbers, this occurs when there is a carry from bit 7 to bit 8. */
+ * For 16-bit numbers, this occurs when there is a carry from bit 11 to bit 12. */
 void Cpu::SetHalfCarryAdd(uint16_t a, uint16_t b) {
-  // unsure if this is correct
-  bool val = (((a & 0xFF) + (b & 0xFF)) & 0x100) == 0x100;
+  uint16_t sum = (a & 0xFFF) + (b & 0xFFF);
+  bool val = sum > 0xFFF;
   AssignFlag(HALF_CARRY, val);
 }
 
@@ -138,7 +139,7 @@ void Cpu::SetHalfCarryAdd(uint16_t a, uint16_t b) {
  * Set carry flag for addition.
  * For 16-bit numbers, this is set when addition overflowed out of the 8th bit. */
 void Cpu::SetCarryAdd(uint16_t a, uint16_t b) {
-  bool val =  (int) (a + b) > 65536;
+  bool val =  ((uint32_t) a + (uint32_t) b) > 0xFFFF;
   AssignFlag(CARRY, val);
 }
 
@@ -159,9 +160,11 @@ void Cpu::SetCarrySub(uint16_t a, uint16_t b) {
 
 /*  Cpu::SetAddFlags
  *  Sets zero, sub, half carry, and carry flags for addition */
-void Cpu::SetAddFlags(uint16_t a, uint16_t b) {
+void Cpu::SetAddFlags(uint16_t a, uint16_t b, bool setzero = true) {
   uint16_t result = a + b;
-  AssignFlag(ZERO, (result==0));
+  if (setzero) {
+    AssignFlag(ZERO, (result==0));
+  }
   AssignFlag(SUB, 0);
   SetHalfCarryAdd(a, b);
   SetCarryAdd(a, b);

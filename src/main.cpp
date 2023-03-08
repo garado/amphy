@@ -52,7 +52,10 @@ int main( int argc, char* args[] )
   // Main loop
   for (;;) {
     // Run CPU
-    // debug->RegdumpGBDoc();
+    #ifdef GBDOC
+    debug->RegdumpGBDoc();
+    #endif
+
     bool cpu_exec_result = cpu->execute();
     if (cpu_exec_result == FAILURE) {
       std::cout << __PRETTY_FUNCTION__ << ": Fatal CPU error: exiting" << std::endl;
@@ -60,7 +63,6 @@ int main( int argc, char* args[] )
       break;
     } else {
       // debug->RegdumpGBDoc();
-      // debug->step();
     }
       
     // Run PPU
@@ -72,11 +74,13 @@ int main( int argc, char* args[] )
     }
 
     // Read serial output from Blargg's test roms
+    #ifndef GBDOC
     if (bus->read(0xFF02) == 0x81) {
       char c = bus->read(0xFF01);
       std::cout << c << std::flush;
       bus->write(0xFF02, 0);
     }
+    #endif
   }
 
   // Free resources and close SDL
