@@ -32,7 +32,7 @@ void Cpu::RRCA() {
 }
 
 /* 17: RLA
- * Combine CY and A to make a 9-bit number, with CY as msb.
+ * Combine CY and A to make a 9-bit number with CY as msb.
  * Then rotate that left. Old CY gets copied to bit 0.
  * Old bit 8 of A is discarded. */
 void Cpu::RLA() {
@@ -43,7 +43,7 @@ void Cpu::RLA() {
   AssignFlag(ZERO, 0);
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
-  AssignFlag(CARRY, oldCy);
+  AssignFlag(CARRY, oldbit7);
   cycles_last_taken = 4;
 }
 

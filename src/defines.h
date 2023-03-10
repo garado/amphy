@@ -8,7 +8,7 @@
 #define FAILURE 1
 #define SUCCESS 0
 
-// TODO move this to makefile
-//#define GBDOC
+// TODO make this a command line option
+#define GBDOC
 
 #endif

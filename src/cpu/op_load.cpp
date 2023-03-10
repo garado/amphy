@@ -11,8 +11,7 @@
 /* LD n, (HL)
  * Put value in mem address in HL into register. */
 void Cpu::LD_n_atHL(uint8_t * reg) {
-  uint16_t address = hl();
-  *reg = bus->read(address);
+  *reg = bus->read(hl());
   cycles_last_taken = 8;
 }
 
@@ -27,8 +26,7 @@ void Cpu::LD_L_atHL() { LD_n_atHL(&l); }
 /* LD (HL), n
  * Put contents of register n into mem location specified by HL. */
 void Cpu::LD_atHL_n(uint8_t * reg) {
-  uint16_t address = hl();
-  bus->write(address, *reg);
+  bus->write(hl(), *reg);
   cycles_last_taken = 8;
 }
 
@@ -43,17 +41,15 @@ void Cpu::LD_atHL_L() { LD_atHL_n(&l); }
 /* 36: LD (HL), u8
  * Store contents of 8bit immediate n into mem location (HL) */
 void Cpu::LD_atHL_u8() {
-  uint16_t address = hl();
   uint8_t val = bus->read(pc++);
-  bus->write(address, val);
+  bus->write(hl(), val);
   cycles_last_taken = 12;
 }
 
 /* LD n, u8
  * Load 8bit immediate value into register n. */
 void Cpu::LD_n_u8(uint8_t * reg) {
-  uint8_t u8 = bus->read(pc++);
-  *reg = u8;
+  *reg = bus->read(pc++);
   cycles_last_taken = 8;
 }
 
@@ -69,65 +65,65 @@ void Cpu::LD_L_u8() { LD_n_u8(&l); }
  * @param     src   Pointer to source register
  *            dst   Pointer to dst register
  * @brief     Put value of reg n into reg m */
-void Cpu::LD_n_m(uint8_t * src, uint8_t * dst) {
+void Cpu::LD_n_m(uint8_t * dst, uint8_t * src) {
   *dst = *src;
   cycles_last_taken = 4;
 }
 
 void Cpu::LD_A_A() { LD_n_m(&a, &a); }
-void Cpu::LD_A_B() { LD_n_m(&b, &a); }
-void Cpu::LD_A_C() { LD_n_m(&c, &a); }
-void Cpu::LD_A_D() { LD_n_m(&d, &a); }
-void Cpu::LD_A_E() { LD_n_m(&e, &a); }
-void Cpu::LD_A_H() { LD_n_m(&h, &a); }
-void Cpu::LD_A_L() { LD_n_m(&l, &a); }
+void Cpu::LD_A_B() { LD_n_m(&a, &b); }
+void Cpu::LD_A_C() { LD_n_m(&a, &c); }
+void Cpu::LD_A_D() { LD_n_m(&a, &d); }
+void Cpu::LD_A_E() { LD_n_m(&a, &e); }
+void Cpu::LD_A_H() { LD_n_m(&a, &h); }
+void Cpu::LD_A_L() { LD_n_m(&a, &l); }
 
-void Cpu::LD_B_A() { LD_n_m(&a, &b); }
+void Cpu::LD_B_A() { LD_n_m(&b, &a); }
 void Cpu::LD_B_B() { LD_n_m(&b, &b); }
-void Cpu::LD_B_C() { LD_n_m(&c, &b); }
-void Cpu::LD_B_D() { LD_n_m(&d, &b); }
-void Cpu::LD_B_E() { LD_n_m(&e, &b); }
-void Cpu::LD_B_H() { LD_n_m(&h, &b); }
-void Cpu::LD_B_L() { LD_n_m(&l, &b); }
+void Cpu::LD_B_C() { LD_n_m(&b, &c); }
+void Cpu::LD_B_D() { LD_n_m(&b, &d); }
+void Cpu::LD_B_E() { LD_n_m(&b, &e); }
+void Cpu::LD_B_H() { LD_n_m(&b, &h); }
+void Cpu::LD_B_L() { LD_n_m(&b, &l); }
 
-void Cpu::LD_C_A() { LD_n_m(&a, &c); }
-void Cpu::LD_C_B() { LD_n_m(&b, &c); }
+void Cpu::LD_C_A() { LD_n_m(&c, &a); }
+void Cpu::LD_C_B() { LD_n_m(&c, &b); }
 void Cpu::LD_C_C() { LD_n_m(&c, &c); }
-void Cpu::LD_C_D() { LD_n_m(&d, &c); }
-void Cpu::LD_C_E() { LD_n_m(&e, &c); }
-void Cpu::LD_C_H() { LD_n_m(&h, &c); }
-void Cpu::LD_C_L() { LD_n_m(&l, &c); }
+void Cpu::LD_C_D() { LD_n_m(&c, &d); }
+void Cpu::LD_C_E() { LD_n_m(&c, &e); }
+void Cpu::LD_C_H() { LD_n_m(&c, &h); }
+void Cpu::LD_C_L() { LD_n_m(&c, &l); }
 
-void Cpu::LD_D_A() { LD_n_m(&a, &d); }
-void Cpu::LD_D_B() { LD_n_m(&b, &d); }
-void Cpu::LD_D_C() { LD_n_m(&c, &d); }
+void Cpu::LD_D_A() { LD_n_m(&d, &a); }
+void Cpu::LD_D_B() { LD_n_m(&d, &b); }
+void Cpu::LD_D_C() { LD_n_m(&d, &c); }
 void Cpu::LD_D_D() { LD_n_m(&d, &d); }
-void Cpu::LD_D_E() { LD_n_m(&e, &d); }
-void Cpu::LD_D_H() { LD_n_m(&h, &d); }
-void Cpu::LD_D_L() { LD_n_m(&l, &d); }
+void Cpu::LD_D_E() { LD_n_m(&d, &e); }
+void Cpu::LD_D_H() { LD_n_m(&d, &h); }
+void Cpu::LD_D_L() { LD_n_m(&d, &l); }
 
-void Cpu::LD_E_A() { LD_n_m(&a, &e); }
-void Cpu::LD_E_B() { LD_n_m(&b, &e); }
-void Cpu::LD_E_C() { LD_n_m(&c, &e); }
-void Cpu::LD_E_D() { LD_n_m(&d, &e); }
+void Cpu::LD_E_A() { LD_n_m(&e, &a); }
+void Cpu::LD_E_B() { LD_n_m(&e, &b); }
+void Cpu::LD_E_C() { LD_n_m(&e, &c); }
+void Cpu::LD_E_D() { LD_n_m(&e, &d); }
 void Cpu::LD_E_E() { LD_n_m(&e, &e); }
-void Cpu::LD_E_H() { LD_n_m(&h, &e); }
-void Cpu::LD_E_L() { LD_n_m(&l, &e); }
+void Cpu::LD_E_H() { LD_n_m(&e, &h); }
+void Cpu::LD_E_L() { LD_n_m(&e, &l); }
 
-void Cpu::LD_H_A() { LD_n_m(&a, &h); }
-void Cpu::LD_H_B() { LD_n_m(&b, &h); }
-void Cpu::LD_H_C() { LD_n_m(&c, &h); }
-void Cpu::LD_H_D() { LD_n_m(&d, &h); }
-void Cpu::LD_H_E() { LD_n_m(&e, &h); }
+void Cpu::LD_H_A() { LD_n_m(&h, &a); }
+void Cpu::LD_H_B() { LD_n_m(&h, &b); }
+void Cpu::LD_H_C() { LD_n_m(&h, &c); }
+void Cpu::LD_H_D() { LD_n_m(&h, &d); }
+void Cpu::LD_H_E() { LD_n_m(&h, &e); }
 void Cpu::LD_H_H() { LD_n_m(&h, &h); }
-void Cpu::LD_H_L() { LD_n_m(&l, &h); }
+void Cpu::LD_H_L() { LD_n_m(&h, &l); }
 
-void Cpu::LD_L_A() { LD_n_m(&a, &l); }
-void Cpu::LD_L_B() { LD_n_m(&b, &l); }
-void Cpu::LD_L_C() { LD_n_m(&c, &l); }
-void Cpu::LD_L_D() { LD_n_m(&d, &l); }
-void Cpu::LD_L_E() { LD_n_m(&e, &l); }
-void Cpu::LD_L_H() { LD_n_m(&h, &l); }
+void Cpu::LD_L_A() { LD_n_m(&l, &a); }
+void Cpu::LD_L_B() { LD_n_m(&l, &b); }
+void Cpu::LD_L_C() { LD_n_m(&l, &c); }
+void Cpu::LD_L_D() { LD_n_m(&l, &d); }
+void Cpu::LD_L_E() { LD_n_m(&l, &e); }
+void Cpu::LD_L_H() { LD_n_m(&l, &h); }
 void Cpu::LD_L_L() { LD_n_m(&l, &l); }
 
 /* LD N, (M)
@@ -348,7 +344,13 @@ void Cpu::Pop_NM(uint8_t * upper, uint8_t * lower) {
   cycles_last_taken = 16;
 }
 
-void Cpu::POP_AF() { Pop_NM( &a, &f ); }
 void Cpu::POP_BC() { Pop_NM( &b, &c ); }
 void Cpu::POP_DE() { Pop_NM( &d, &e ); }
 void Cpu::POP_HL() { Pop_NM( &h, &l ); }
+
+// special handling
+void Cpu::POP_AF() {
+  f = (bus->read(sp++)) & 0xF0;
+  a = bus->read(sp++);
+  cycles_last_taken = 16;
+}

@@ -14,6 +14,7 @@
 
 #define CART_TYPE 0x147
 
+// Enum of different Gameboy cartridge types
 typedef enum CartType { 
   ROM,
   MBC1,
@@ -43,9 +44,9 @@ typedef enum CartType {
 
 /* Bus::read
  * Memory read function
- */
+ * @param address The address to read from */
 uint8_t Bus::read(uint16_t address) const {
-  // Temporary for gbdoc
+  // Temporary for GBDoc
   if (address == 0xFF44) {
     return 0x90;
   }

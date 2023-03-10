@@ -154,7 +154,8 @@ void Cpu::SetHalfCarrySub(uint16_t a, uint16_t b) {
  * Set carry (borrow) flag for subtraction. 
  * This is set if the subtraction requires a borrow from the MSB. */
 void Cpu::SetCarrySub(uint16_t a, uint16_t b) {
-  bool val = (int) (a - b) < 0;
+  // bool val = ((int) a - (int) b) < 0;
+  bool val = b > a;
   AssignFlag(CARRY, val);
 }
 

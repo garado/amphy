@@ -54,29 +54,29 @@ uint8_t Cpu::Decode16bitBitPos(uint8_t opcode)
   case 0x4: // bit
   case 0x8: // res
   case 0xC: // set
-    if (lsb < 0x9)  return 0;
-    if (lsb >= 0x9) return 1;
+    if (lsb < 0x8)  return 0;
+    if (lsb >= 0x8) return 1;
     break;
 
   case 0x5:
   case 0x9:
   case 0xD:
-    if (lsb < 0x9)  return 2;
-    if (lsb >= 0x9) return 3;
+    if (lsb < 0x8)  return 2;
+    if (lsb >= 0x8) return 3;
     break; 
   
   case 0x6:
   case 0xA:
   case 0xE:
-    if (lsb < 0x9)  return 4;
-    if (lsb >= 0x9) return 5;
+    if (lsb < 0x8)  return 4;
+    if (lsb >= 0x8) return 5;
     break;
 
   case 0x7:
   case 0xB:
   case 0xF:
-    if (lsb < 0x9)  return 6;
-    if (lsb >= 0x9) return 7;
+    if (lsb < 0x8)  return 6;
+    if (lsb >= 0x8) return 7;
     break;
 
   default: break;
@@ -108,21 +108,29 @@ void Cpu::Decode16bitOpcode(uint8_t opcode)
 
   switch (msb) {
   case 0x0: 
+    if (lsb == 0x6) RLC_atHL(); break;
+    if (lsb == 0xE) RRC_atHL(); break;
     if (lsb < 0x8)  RLC(reg);
     if (lsb >= 0x8) RRC(reg);
     break;
 
   case 0x1:
+    if (lsb == 0x6) RL_atHL(); break;
+    if (lsb == 0xE) RR_atHL(); break;
     if (lsb < 0x8)  RL(reg);
     if (lsb >= 0x8) RR(reg);
     break; 
   
   case 0x2:
+    if (lsb == 0x6) SLA_atHL(); break;
+    if (lsb == 0xE) SRA_atHL(); break;
     if (lsb < 0x8)  SLA(reg);
     if (lsb >= 0x8) SRA(reg);
     break;
 
   case 0x3:
+    if (lsb == 0x6) SWAP_atHL(); break;
+    if (lsb == 0xE) SRL_atHL();  break;
     if (lsb < 0x8)  SWAP(reg);
     if (lsb >= 0x8) SRL(reg);
     break;
@@ -131,27 +139,38 @@ void Cpu::Decode16bitOpcode(uint8_t opcode)
   case 0x5:
   case 0x6:
   case 0x7:
-    BIT_n(reg, bitpos);
+    if (lsb == 0x6 || lsb == 0xE) {
+      BIT_n_atHL(bitpos);
+    } else {
+      BIT_n(reg, bitpos);
+    }
     break;
 
   case 0x8:
   case 0x9:
   case 0xa:
   case 0xb:
-    RES_n(reg, bitpos);
+    if (lsb == 0x6 || lsb == 0xE) {
+      RES_n_atHL(bitpos);
+    } else {
+      RES_n(reg, bitpos);
+    }
     break;
 
   case 0xc:
   case 0xd:
   case 0xe:
   case 0xf:
-    SET_n(reg, bitpos);
+    if (lsb == 0x6 || lsb == 0xE) {
+      SET_n_atHL(bitpos);
+    } else {
+      SET_n(reg, bitpos);
+    }
     break;
 
   default:   break; 
   }
 }
-
 
 /* @Function  Cpu::RLC
  * @param     reg   Pointer to value to rotate 
@@ -169,6 +188,22 @@ void Cpu::RLC(uint8_t * reg) {
   cycles_last_taken = 8;
 }
 
+/* @Function  Cpu::RLC_atHL
+ * @brief     Rotate contents of memory in address HL to the left.
+ * @return    none */ 
+void Cpu::RLC_atHL() {
+  uint8_t val = bus->read(hl());
+  uint8_t oldbit7 = val >> 7;
+  val <<= 1;
+  val |= oldbit7;
+  AssignFlag(CARRY, oldbit7);
+  AssignFlag(ZERO, val == 0);
+  AssignFlag(HALF_CARRY, 0);
+  AssignFlag(SUB, 0);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
+}
+
 /* @Function  Cpu::RRC
  * @param     reg   Pointer to value to rotate 
  * @brief     Rotate contents of reg to the right. Contents of bit 0 are placed in
@@ -183,6 +218,23 @@ void Cpu::RRC(uint8_t * reg) {
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(SUB, 0);
   cycles_last_taken = 8;
+}
+
+/* @Function  Cpu::RRC_atHL
+ * @brief     Rotate contents of value at address HL to the right.
+ *            Contents of bit 0 are placed in both the CY flag and bit 7 of val.
+ * @return    none */ 
+void Cpu::RRC_atHL() {
+  uint8_t val = bus->read(hl());
+  uint8_t oldbit0 = val & 0x1;
+  val >>= 1;
+  val |= oldbit0 << 7;
+  AssignFlag(CARRY, oldbit0);
+  AssignFlag(ZERO, val == 0);
+  AssignFlag(HALF_CARRY, 0);
+  AssignFlag(SUB, 0);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
 }
 
 /* @Function  Cpu::RL
@@ -202,11 +254,31 @@ void Cpu::RL(uint8_t * reg) {
   cycles_last_taken = 8;
 }
 
+/* @Function  Cpu::RL_atHL
+ * @brief     Rotate contents of memory at HL to the left through CY.
+ *            The previous contents of the carry flag are copied to
+ *            bit 0 of value. The previous bit 7 of the value is
+ *            copied to the carry flag.
+ * @return    none */ 
+void Cpu::RL_atHL() {
+  uint8_t val = bus->read(hl());
+  uint8_t oldbit7 = val >> 7;
+  val <<= 1;
+  val |= GetFlag(CARRY);
+  AssignFlag(CARRY, oldbit7);
+  AssignFlag(ZERO, val == 0);
+  AssignFlag(HALF_CARRY, 0);
+  AssignFlag(SUB, 0);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
+}
+
 /* @Function  Cpu::RR
  * @param     reg   Pointer to value to rotate 
- * @brief     Rotate contents of reg to the right through CY. The previous contents
- *            of the carry flag are copied to bit 7 of the register.
- *            The previous bit 0 of the register is copied to the carry flag.
+ * @brief     Rotate contents of reg to the right through CY. The
+ *            previous contents of the carry flag are copied to bit
+ *            7 of the register. The previous bit 0 of the register
+ *            is copied to the carry flag.
  * @return    none */ 
 void Cpu::RR(uint8_t * reg) {
   uint8_t oldbit0 = *reg & 0x1;
@@ -217,6 +289,25 @@ void Cpu::RR(uint8_t * reg) {
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(SUB, 0);
   cycles_last_taken = 8;
+}
+
+/* @Function  Cpu::RR_atHL
+ * @brief     Rotate contents of memory at HL to the right through
+ *            CY. The previous contents of the carry flag are copied
+ *            to bit 0 of value. The previous bit 7 of the value is
+ *            copied to the carry flag.
+ * @return    none */ 
+void Cpu::RR_atHL() {
+  uint8_t val = bus->read(hl());
+  uint8_t oldbit0 = val & 0x1;
+  val >>= 1;
+  val |= (GetFlag(CARRY) << 7);
+  AssignFlag(CARRY, oldbit0);
+  AssignFlag(ZERO, val == 0);
+  AssignFlag(HALF_CARRY, 0);
+  AssignFlag(SUB, 0);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
 }
 
 /* @Function  Cpu::SLA
@@ -234,6 +325,24 @@ void Cpu::SLA(uint8_t * reg)
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   cycles_last_taken = 8;
+}
+
+/* @Function  Cpu::SLA_atHL
+ * @brief     Shift the contents of value at address HL to the
+ *            left through CY. Bit 0 is reset to 0.
+ * @return    none */ 
+void Cpu::SLA_atHL()
+{
+  uint8_t val = bus->read(hl());
+  uint8_t bit7 = val >> 7;
+  AssignFlag(CARRY, bit7);
+  val <<= 1;
+  val &= 0xFE;
+  AssignFlag(ZERO, val == 0);
+  AssignFlag(SUB, 0);
+  AssignFlag(HALF_CARRY, 0);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
 }
 
 /* @Function  Cpu::SRA
@@ -254,10 +363,31 @@ void Cpu::SRA(uint8_t * reg)
   cycles_last_taken = 8;
 }
 
+/* @Function  Cpu::SRA_atHL
+ * @brief     Shift the contents of value at address HL to the
+ *            right through CY. The previous value of bit 0 is
+ *            copied to CY. Bit 7 of the value REMAINS UNCHANGED.
+ * @return    none */ 
+void Cpu::SRA_atHL()
+{
+  uint8_t val = bus->read(hl());
+  uint8_t oldbit7 = val >> 7;
+  AssignFlag(CARRY, val & 0x1);
+  val >>= 1;
+  val |= (oldbit7 << 7);
+  AssignFlag(ZERO, val == 0);
+  AssignFlag(SUB, 0);
+  AssignFlag(HALF_CARRY, 0);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
+}
+
 /* @Function  Cpu::SWAP
  * @param     reg   Pointer to value to shift
- * @brief     Shift the contents of the lower-order four bits (0-3) of reg to the higher-order four bits (4-7) of reg.
- *            Shift the higher-order four bits to the lower-order four bits. */
+ * @brief     Shift the contents of the lower-order four bits (0-3)
+ *            of reg to the higher-order four bits (4-7) of reg.
+ *            Shift the higher-order four bits to the lower-order
+ *            four bits. */
 void Cpu::SWAP(uint8_t * reg)
 {
   uint8_t old_lower4 = *reg << 4;
@@ -268,6 +398,25 @@ void Cpu::SWAP(uint8_t * reg)
   AssignFlag(HALF_CARRY, 0);
   AssignFlag(SUB, 0);
   cycles_last_taken = 8;
+}
+
+/* @Function  Cpu::SWAP_atHL
+ * @brief     Shift the contents of the lower-order four bits (0-3)
+ *            of value at address HLto the higher-order four bits
+ *            (4-7) of reg. Shift the higher-order four bits to the
+ *            lower-order four bits. */
+void Cpu::SWAP_atHL()
+{
+  uint8_t val = bus->read(hl());
+  uint8_t old_lower4 = val << 4;
+  val >>= 4; // move upper 4 to lower 4
+  val |= old_lower4;
+  AssignFlag(ZERO, val == 0);
+  AssignFlag(CARRY, 0);
+  AssignFlag(HALF_CARRY, 0);
+  AssignFlag(SUB, 0);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
 }
 
 /* @Function  Cpu::SRL
@@ -287,17 +436,50 @@ void Cpu::SRL(uint8_t * reg)
   cycles_last_taken = 8;
 }
 
+/* @Function  Cpu::SRL_atHL
+ * @brief     Shift contents of value at address HL to the
+ *            right through CY. Bit 7 of val is reset to 0. */
+void Cpu::SRL_atHL()
+{
+  uint8_t val = bus->read(hl());
+  uint8_t oldbit0 = val & 0x1;
+  AssignFlag(CARRY, oldbit0);
+  val >>= 1;
+  val &= 0x7F;
+  AssignFlag(ZERO, val == 0);
+  AssignFlag(CARRY, oldbit0);
+  AssignFlag(HALF_CARRY, 0);
+  AssignFlag(SUB, 0);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
+}
+
 /* @Function  Cpu::BIT_n
  * @param     reg Pointer to the reg
  * @param     bitpos The bit position
- * @brief     Copy the complement of the contents of bit #bitpos in reg to Z flag */
-void Cpu::BIT_n(uint8_t * reg, uint8_t bitpos)
+ * @brief     Copy the complement of the contents of bit n in reg to Z flag */
+void Cpu::BIT_n(uint8_t * reg, uint8_t n)
 {
-  uint8_t val = (*reg >> bitpos) & 0x1;
-  AssignFlag(ZERO, ~val);
+  uint8_t val = (*reg >> n) & 0x1;
+  AssignFlag(ZERO, !val);
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 1);
   cycles_last_taken = 8;
+}
+
+/* @Function  Cpu::BIT_n_atHL
+ * @param     bitpos The bit position
+ * @brief     Copy the complement of the contents of value at
+ *            address HL to Z flag */
+void Cpu::BIT_n_atHL(uint8_t n)
+{
+  uint8_t val = bus->read(hl());
+  val = (val >> n) & 0x1;
+  AssignFlag(ZERO, !val);
+  AssignFlag(SUB, 0);
+  AssignFlag(HALF_CARRY, 1);
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
 }
 
 /* @Function  Cpu::RES_n
@@ -311,6 +493,18 @@ void Cpu::RES_n(uint8_t * reg, uint8_t bitpos)
   cycles_last_taken = 8;
 }
 
+/* @Function  Cpu::RES_n_atHL
+ * @param     bitpos The bit position
+ * @brief     Reset bit #bitpos in value at address HL to 0. */
+void Cpu::RES_n_atHL(uint8_t bitpos)
+{
+  uint8_t val = bus->read(hl());
+  uint8_t mask = (0xFF ^ (0x1 << bitpos));
+  val &= mask;
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
+}
+
 /* @Function  Cpu::SET_n
  * @param     reg Pointer to the reg
  * @param     bitpos The bit position
@@ -320,4 +514,16 @@ void Cpu::SET_n(uint8_t * reg, uint8_t bitpos)
   uint8_t mask = 0x1 << bitpos;
   *reg |= mask;
   cycles_last_taken = 8;
+}
+
+/* @Function  Cpu::SET_n_atHL
+ * @param     bitpos The bit position
+ * @brief     Set bit #bitpos in value at address HL to 1. */
+void Cpu::SET_n_atHL(uint8_t bitpos)
+{
+  uint8_t val = bus->read(hl());
+  uint8_t mask = 0x1 << bitpos;
+  val |= mask;
+  bus->write(hl(), val);
+  cycles_last_taken = 16;
 }

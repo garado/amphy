@@ -84,7 +84,7 @@ void Cpu::NOP() {
 /* 2F: CPL
  * Complement A register. */
 void Cpu::CPL() {
-  AssignFlag(ZERO, 1);
+  AssignFlag(SUB, 1);
   AssignFlag(HALF_CARRY, 1);
   a = ~a;
   cycles_last_taken = 4;
@@ -94,7 +94,7 @@ void Cpu::CPL() {
  * Complement carry flag. */
 void Cpu::CCF() {
   uint8_t cy = GetFlag(CARRY);
-  AssignFlag(CARRY, ~cy);
+  AssignFlag(CARRY, !cy);
   AssignFlag(SUB, 0);
   AssignFlag(HALF_CARRY, 0);
   cycles_last_taken = 4;
@@ -118,11 +118,32 @@ void Cpu::HALT() {
   cycles_last_taken = 4;
 }
 
-/* 27: DAA
- * Tbh I do not understand wtf this does */
- void Cpu::DAA() {
+/* 27: DAA 
+ * Called immediately after 2 BCD-encoded digits are added.
+ * Responsible for adjust accumulator to correct BCD representation. 
+ * Sets carry flag if result > 0x99. */
+void Cpu::DAA() {
+  uint16_t correction = 0; 
+
+  uint8_t HC = GetFlag(HALF_CARRY);
+  uint8_t C = GetFlag(CARRY);
+  uint8_t N = GetFlag(SUB);
+
+  if (HC || (!N && ((a & 0xF) > 0x9))) {
+    correction |= 0x6;
+  }
+  
+  if (C || (!N && (a > 0x99))) {
+    correction |= 0x60;
+    AssignFlag(CARRY, true);
+  }
+
+  a += N ? -correction : correction;
+
+  AssignFlag(HALF_CARRY, 0);
+  AssignFlag(ZERO, a == 0);
   cycles_last_taken = 4;
- }
+}
 
 /* 10 00:STOP
  * Halt CPU and LCD until button pressed. */
@@ -143,7 +164,7 @@ void Cpu::DI() {
 
 /* FB: EI
  * Enables interrupts (IME = 0) but NOT immediately.
- * Interrupts are enabled after instruction after EI is 
+ * Interrupts are enabled after the instruction after EI is 
  * executed. */
 void Cpu::EI() {
   enableInterrupts = 2; // magic number ugh

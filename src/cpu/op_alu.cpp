@@ -13,19 +13,22 @@
  * Increment contents of (HL). */
 void Cpu::INC_atHL() {
   uint8_t val = bus->read(hl());
-  SetAddFlags(val, 1);
-  ++val;
+  SetHalfCarryAdd(val, 1);
+  AssignFlag(SUB, 0);
+  val++;
+  AssignFlag(ZERO, (val == 0));
   bus->write(hl(), val);
   cycles_last_taken = 12;
 }
 
 /* 35: DEC HL
- * Decrement contents of (HL). */
+ * Decrement contents of (HL). DOES NOT set carry flags. */
 void Cpu::DEC_atHL() {
   uint8_t val = bus->read(hl());
-  SetSubFlags(val, 1);
-  --val;
-  bus->write(hl(), val);
+  AssignFlag(SUB, 1);
+  SetHalfCarrySub(val, 1);
+  bus->write(hl(), --val);
+  AssignFlag(ZERO, (val == 0));
   cycles_last_taken = 12;
 }
 
@@ -175,13 +178,27 @@ void Cpu::SBC_A_E() { SBC_A_n(&e); }
 void Cpu::SBC_A_H() { SBC_A_n(&h); }
 void Cpu::SBC_A_L() { SBC_A_n(&l); }
 
-/*  SBC A, (HL)
+/*  9E: SBC A, (HL)
  *  Subtract value of (HL) + carry from A. 
  *  A = A - ((HL) + CY) */
 void Cpu::SBC_A_atHL() {
-  uint8_t val = bus->read(hl()) + GetFlag(CARRY);
-  SetSubFlags(a, val);
-  a -= val;
+  uint8_t val = bus->read(hl());
+
+  // Can't use set sub flags because that's only for adding 2 numbers
+  AssignFlag(SUB, 1);
+
+  // Half carry
+  uint16_t hc_diff = (a & 0xF) - ((val & 0xF) + GetFlag(CARRY));
+  AssignFlag(HALF_CARRY, hc_diff & 0x10);
+
+  // Carry
+  uint16_t diff = a - (val + GetFlag(CARRY));
+  AssignFlag(CARRY, diff > 0xFF);
+
+  // Zero
+  a = diff & 0xFF;
+  AssignFlag(ZERO, a == 0);
+ 
   cycles_last_taken = 8;
 }
 
@@ -240,14 +257,27 @@ void Cpu::ADC_A_E() { ADC_A_n(&e); }
 void Cpu::ADC_A_H() { ADC_A_n(&h); }
 void Cpu::ADC_A_L() { ADC_A_n(&l); }
 
-/* ADC A, (HL)
+/* 8E: ADC A, (HL)
  * Add value of (HL) + carry to A. 
  * A = A + ((HL) + CY) */
 void Cpu::ADC_A_atHL() {
-  uint16_t address = hl();
-  uint8_t val = bus->read(address);
-  SetAddFlags(a, val, GetFlag(CARRY));
-  a += val + GetFlag(CARRY);
+  uint8_t val = bus->read(hl());
+
+  // Can't use set add flags because that's only for adding 2 numbers
+  AssignFlag(SUB, 0);
+
+  // Half carry
+  uint16_t hc_sum = (a & 0xF) + (val & 0xF) + (GetFlag(CARRY) & 0xF);
+  AssignFlag(HALF_CARRY, hc_sum > 0xF);
+
+  // Carry
+  uint16_t sum = a + val + GetFlag(CARRY);
+  AssignFlag(CARRY, sum > 0xFF);
+
+  // Zero
+  a = sum & 0xFF;
+  AssignFlag(ZERO, a == 0);
+
   cycles_last_taken = 8;
 }
 
