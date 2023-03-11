@@ -84,9 +84,11 @@ uint8_t Bus::read(uint16_t address) const {
 
 /* @Function Bus::write
  * @param address Address to write to
- * @param val Value to store into address
- */
+ * @param val Value to store into address */
 void Bus::write(uint16_t address, uint8_t val) {
+  // Any write to DIV timer sets it to 0.
+  if (address == DIV) val = 0;
+
   if (address < ROM1_START) {
     rom_00.at(address) = val;
   } else if (address < VRAM_START) {
@@ -182,7 +184,7 @@ uint8_t * Bus::GetAddressPointer(uint16_t address)
   } else if (address <= 0xFFFE) {
     it = hram.begin() + (address - 0xFF80);
   } else if (address <= 0xFFFF) {
-    // it = &int_enable;
+    return &int_enable;
   }
   return &(*it);
 }

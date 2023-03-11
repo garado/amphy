@@ -68,11 +68,11 @@ int main( int argc, char* argv[] )
 
   // Main loop
   for (;;) {
-    // Run CPU
     if (cpu->gbdoc) {
       debug->RegdumpGBDoc();
     }
 
+    // Run CPU
     try {
       if (cpu->debug) debug->step();
       cpu->execute();

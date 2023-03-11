@@ -185,11 +185,141 @@ void Cpu::SetSubFlags(uint16_t a, uint16_t b) {
   SetCarrySub(a, b);
 }
 
+/* @Function  Cpu::handleInterrupt
+ * @return    true if ISR executes, false otherwise
+ * For an interrupt to occur:
+ *    - an interrupt request must be received (IRQ)
+ *    - the IME flag must be set
+ *    - the corresponding interrupt enable bits must be set 
+ * When an interrupt occurs, the IF (IRQ) bit is cleared,
+ * and pc is pushed to the stack and then set to the address
+ * of the interrupt handler. */
+uint8_t Cpu::handleInterrupt() {
+  if (!ime) return false;
+
+  uint8_t ie  = bus->read(0xFFFF);
+  uint8_t irq = bus->read(0xFF0F);
+  uint8_t ret = false;
+
+  uint8_t ie_vblank   = INT_VBLANK_MASK(ie);
+  uint8_t irq_vblank  = INT_VBLANK_MASK(irq);
+  if (ie_vblank && irq_vblank) {
+    Push16Bit(pc);
+    pc = ISR_ADDR_VBLANK;
+    ime_prev = ime;
+    bus->write(0xFF0F, INT_VBLANK_CLEAR(irq));
+    return true;
+  }
+
+  uint8_t ie_stat  = INT_STAT_MASK(ie);
+  uint8_t irq_stat = INT_STAT_MASK(irq);
+  if (ie_stat && irq_stat) {
+    Push16Bit(pc);
+    pc = ISR_ADDR_STAT;
+    ime_prev = ime;
+    bus->write(0xFF0F, INT_STAT_CLEAR(irq));
+    return true;
+  }
+
+  uint8_t ie_timer  = INT_TIMER_MASK(ie);
+  uint8_t irq_timer = INT_TIMER_MASK(irq);
+  if (ie_timer && irq_timer) {
+    Push16Bit(pc);
+    pc = ISR_ADDR_TIMER;
+    ime_prev = ime;
+    bus->write(0xFF0F, INT_TIMER_CLEAR(irq));
+    return true;
+  }
+
+  uint8_t ie_serial  = INT_SERIAL_MASK(ie); 
+  uint8_t irq_serial = INT_SERIAL_MASK(irq);
+  if (ie_serial && irq_serial) {
+    Push16Bit(pc);
+    pc = ISR_ADDR_SERIAL;
+    ime_prev = ime;
+    bus->write(0xFF0F, INT_SERIAL_CLEAR(irq));
+    return true;
+  }
+
+  uint8_t ie_joypad  = INT_JOYPAD_MASK(ie);
+  uint8_t irq_joypad = INT_JOYPAD_MASK(irq);
+  if (ie_joypad && irq_joypad) {
+    Push16Bit(pc);
+    pc = ISR_ADDR_JOYPAD;
+    ime_prev = ime;
+    bus->write(0xFF0F, INT_JOYPAD_CLEAR(irq));
+    return true;
+  }
+
+  return ret;
+}
+
+/* @Function Cpu::runTimer
+ * @brief    Increments DIV and TIMA timers.
+ * Internally there is a SYSCLK that updates every 4 t-cycles.
+ * The DIV timer is the upper 8 bits of SYSCLK.
+ * TIMA is enabled by and incremented at the clock frequency specified by TAC. */
+void Cpu::runTimer() {
+  uint16_t old_sysclk = sysclk;
+  sysclk += cycles_last_taken / 4;
+  bus->write(DIV, sysclk >> 8);
+
+  // TIMA is incremented at the frequency specified by TAC.
+  // When the value overflows (> 0xFF), it is reset to the value
+  // specified in TMA and an interrupt is requested.
+  uint8_t tac = bus->read(TAC);
+
+  // Ensure TIMA is enabled
+  if (!TAC_ENABLE_MASK(tac)) return;
+
+  // If tac_select has value TAC_1024, then it updates every
+  // 1024 clock cycles. log_2(1024) = 10. We can tell if 1024
+  // cycles have passed by checking if the 10th bit of sysclk
+  // changes state.
+  uint8_t tac_select = TAC_SELECT_MASK(tac);
+  uint16_t tac_mask = 0;
+  switch(tac_select){
+    case TAC_1024:  tac_mask = 0x400; break;
+    case TAC_16:    tac_mask = 0x10;  break;
+    case TAC_64:    tac_mask = 0x40;  break;
+    case TAC_256:   tac_mask = 0x100; break;
+    default: break;
+  }
+
+  // XOR returns 1 if bits are different (state change). Then
+  // we mask with tac_mask to check if a specific bit changes state.
+  if ((old_sysclk ^ sysclk) & tac_mask) {
+    uint8_t tima = bus->read(TIMA);
+
+    // Request interrupt and reset TIMA to value in TMA if
+    // overflow occurs. Increment normally otherwise.
+    if (tima == 0xFF) {
+      uint8_t tma = bus->read(TMA);   // Reset to TMA
+      bus->write(TIMA, tma);
+
+      uint8_t irq = bus->read(INTF);  // Set interrupt flag
+      irq |= (1 << INT_TIMER_BIT);
+      bus->write(INTF, irq);
+    } else {
+      bus->write(TIMA, ++tima);
+    }
+  }
+}
+
 /* @Function  Cpu::execute
  * @return    SUCCESS or FAILURE
  * @param     None
  * @brief     Handles execution of all opcodes. */
 uint8_t Cpu::execute() {
+  // Check for interrupts first
+  if (handleInterrupt()) {
+    cycles_last_taken = 20; // interrupt handler takes 20 cycles
+    runTimer();
+    return SUCCESS;
+  }
+
+
+
   op = bus->read(pc++);
 
   // Check for 8bit or 16bit opcode
@@ -216,21 +346,18 @@ uint8_t Cpu::execute() {
     }
   }
 
-  // Janky DI implementation
-  if (disableInterrupts != 0) {
-    --disableInterrupts;
-    if (disableInterrupts == 0) {
-      ime = 0;
-    }
-  }
-
-  // Janky EI implementation
-  if (enableInterrupts != 0) {
-    --enableInterrupts;
-    if (enableInterrupts == 0) {
+  /* The effect of EI is delayed by 1 instruction.
+   * EI_counter is a counter initialized to 2 when EI instruction
+   * is called. It decrements on every instruction so that
+   * it gets to 0 when the instruction after EI is executed. */
+  if (EI_counter > 0) {
+    --EI_counter;
+    if (EI_counter == 0) {
       ime = 1;
     }
   }
+
+  runTimer();
 
   return SUCCESS;
 };

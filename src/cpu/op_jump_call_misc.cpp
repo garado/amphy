@@ -112,13 +112,11 @@ void Cpu::SCF() {
 /* 07: HALT
  * Power down CPU til interrupt occurs. */
 void Cpu::HALT() {
-  // !!! INTERRUPT HANDLER HAS NOT BEEN WRITTEN
-  // THIS FUNCTION MAY NEED TO BE MODIFIED WHEN THAT'S DONE
   cpuEnabled = false;
   cycles_last_taken = 4;
 }
 
-/* 27: DAA 
+/* 27: DAA
  * Called immediately after 2 BCD-encoded digits are added.
  * Responsible for adjust accumulator to correct BCD representation. 
  * Sets carry flag if result > 0x99. */
@@ -158,7 +156,7 @@ void Cpu::STOP() {
  * Interrupts are disabled after instruction after DI is 
  * executed. */
 void Cpu::DI() {
-  disableInterrupts = 2; // magic number ugh
+  ime = false;
   cycles_last_taken = 4;
 }
 
@@ -167,7 +165,7 @@ void Cpu::DI() {
  * Interrupts are enabled after the instruction after EI is 
  * executed. */
 void Cpu::EI() {
-  enableInterrupts = 2; // magic number ugh
+  EI_counter = EI_COUNTER_INIT;
   cycles_last_taken = 4;
 }
 
@@ -207,8 +205,8 @@ void Cpu::RET() {
 }
 
 /* D9: RETI
- * cycles_last_taken = from an interrupt. Sets IME flag back to its
- * pre-interrupt status. */
+ * Used when ISR finishes. Address for return from ISR is loaded
+ * into pc. IME flag is returned to its pre-interrupt status. */
 void Cpu::RETI() {
   uint8_t lsb = bus->read(sp++);
   uint8_t msb = bus->read(sp++);

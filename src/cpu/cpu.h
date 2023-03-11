@@ -11,10 +11,49 @@
 #ifndef CPU_H
 #define CPU_H
 
+// Defines for interrupts
+#define ISR_ADDR_VBLANK 0x40
+#define INT_VBLANK_BIT  0x0 // Bit 0
+#define INT_VBLANK_MASK(x) ((unsigned) x & 0x1)
+#define INT_VBLANK_CLEAR(x) ((unsigned) x & ~(0x1 << INT_VBLANK_BIT ))
+
+#define ISR_ADDR_STAT   0x48
+#define INT_STAT_BIT    0x1 // Bit 1
+#define INT_STAT_MASK(x) ((unsigned) (x >> INT_STAT_BIT) & 0x1)
+#define INT_STAT_CLEAR(x) ((unsigned) x & ~(0x1 << INT_STAT_BIT ))
+
+#define ISR_ADDR_TIMER  0x50
+#define INT_TIMER_BIT   0x2
+#define INT_TIMER_MASK(x) (((unsigned) x >> INT_TIMER_BIT) & 0x1)
+#define INT_TIMER_CLEAR(x) ((unsigned) x & ~(0x1 << INT_TIMER_BIT ))
+
+#define ISR_ADDR_SERIAL 0x58
+#define INT_SERIAL_BIT  0x3
+#define INT_SERIAL_MASK(x) ((unsigned) (x >> INT_SERIAL_BIT) & 0x1)
+#define INT_SERIAL_CLEAR(x) ((unsigned) x & ~(0x1 << INT_SERIAL_BIT ))
+
+#define ISR_ADDR_JOYPAD 0x60
+#define INT_JOYPAD_BIT  0x4
+#define INT_JOYPAD_MASK(x) ((unsigned) (x >> INT_JOYPAD_BIT) & 0x1)
+#define INT_JOYPAD_CLEAR(x) ((unsigned) x & ~(0x1 << INT_JOYPAD_BIT ))
+
+#define EI_COUNTER_INIT 2
+
+// Timer control
+#define TAC_ENABLE_BIT 0x2
+#define TAC_ENABLE_MASK(x) (((unsigned) x >> TAC_ENABLE_BIT) & 0x1)
+#define TAC_SELECT_MASK(x) (((unsigned) x & 0b11))
+#define TAC_1024 0b00
+#define TAC_16   0b01
+#define TAC_64   0b10
+#define TAC_256  0b11
+
 class Cpu 
 {
   private:
     // Internal registers
+    uint16_t sysclk = 0;
+
     uint8_t a = 0x01; // gbdoc init
     uint8_t f = 0xB0;
     uint8_t b = 0x00;
@@ -40,10 +79,11 @@ class Cpu
     int   cycleCount = 0; // in t-cycles
     uint8_t cycles_last_taken = 0;
     bool  cpuEnabled = true;
-    uint8_t disableInterrupts = 0;
-    uint8_t enableInterrupts = 0;
+
+    // Interrupts
     bool ime = true;
     bool ime_prev = true;
+    uint8_t EI_counter = 0;
 
   public:
     // Other flags
@@ -94,6 +134,8 @@ class Cpu
     };
 
   private:
+    uint8_t handleInterrupt();
+
     // =========== 8-bit ===============
     // Rotate/shift
     void RLA();
@@ -454,6 +496,8 @@ class Cpu
 
   public:
     uint8_t execute();
+    void    runTimer();
+
     bool GetFlag(CpuFlags flag);
     void AssignFlag(CpuFlags flag, bool val);
     void unknown(uint8_t opcode);
