@@ -4,6 +4,8 @@
 
 #include "cpu.h"
 #include "../defines.h"
+#include <iostream>
+#include <iomanip>
 
 #define NO_SET_ZERO false
 
@@ -361,9 +363,11 @@ void Cpu::DEC_BC() { DEC_nm(&b, &c); }
 void Cpu::DEC_DE() { DEC_nm(&d, &e); }
 void Cpu::DEC_HL() { DEC_nm(&h, &l); }
 
+/* 3B: DEC_SP
+ * Decrement stack pointer.
+ * Does not affect any flags. */
 void Cpu::DEC_SP() {
   --sp;
-  SetSubFlags(sp, 1);
   cycles_last_taken = 8;
 }
 
@@ -383,9 +387,11 @@ void Cpu::INC_BC() { INC_nm(&b, &c); }
 void Cpu::INC_DE() { INC_nm(&d, &e); }
 void Cpu::INC_HL() { INC_nm(&h, &l); }
 
+/* 33: INC_SP
+ * Increment stack pointer.
+ * Does not affect any flags. */
 void Cpu::INC_SP() {
-  SetAddFlags(sp, 1);
-  ++sp;
+  sp++;
   cycles_last_taken = 8;
 }
 
@@ -414,12 +420,19 @@ void Cpu::ADD_HL_SP() {
 }
 
 /* E8: ADD SP, i8
- * Add n to sp */
+ * Add 8-bit signed immediate to sp and store result in sp.
+ * Half-carry flag is set from bit 3 to 4 and carry is set
+ * from bit 7 because it's treated as 2 8-bit ops. */
 void Cpu::ADD_SP_i8() {
   int8_t i8 = bus->read(pc++);
-  SetHalfCarryAdd(sp, i8);
-  SetCarryAdd(sp, i8);
+
+  int16_t hc_sum = (sp & 0xF) + (i8 & 0xF);
+  bool hc_val = (hc_sum & 0x10) == 0x10;
+
+  uint16_t c_sum = (sp & 0xFF) + (i8 & 0xFF);
+  bool c_val = (c_sum & 0x100) == 0x100;
   sp += i8;
+
   AssignFlag(ZERO, 0);
   AssignFlag(SUB, 0);
   cycles_last_taken = 16;

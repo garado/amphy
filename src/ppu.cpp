@@ -74,7 +74,7 @@ void Ppu::OAMScan(void)
   // In actual hardware, a DMA transfer copies CPU OAM to 
   // PPU OAM, but here we just read directly from CPU OAM
   // because it's a software emulator.
-  for (int i = OAM_START_ADDR; i < OAM_START_ADDR + (OAM_BYTES * 4); i += 4) {
+  for (int i = OAM_START; i < OAM_START + (OAM_BYTES * 4); i += 4) {
     uint8_t ypos = bus->read(i);      // Sprite vertical pos on screen + 16
     uint8_t xpos = bus->read(i + 1);  // H pos on screen + 8
     uint8_t tile = bus->read(i + 2);  // Tile index

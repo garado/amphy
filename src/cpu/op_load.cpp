@@ -130,8 +130,7 @@ void Cpu::LD_L_L() { LD_n_m(&l, &l); }
  * Put value in mem address into N. */
 void Cpu::LD_n_atM(uint8_t * src, uint16_t address)
 {
-  uint8_t val = bus->read(address);
-  *src = val;
+  *src = bus->read(address);
   cycles_last_taken = 8;
 }
 
@@ -141,8 +140,7 @@ void Cpu::LD_A_atDE() { LD_n_atM( &a, de() ); }
 /* E0: LD (a8), A
  * Store the contents of reg A in the address specified by $FF00 + 8-bit immediate. */
 void Cpu::LDH_atu8_A() {
-  uint8_t a8 = bus->read(pc++);
-  uint16_t address = 0xFF00 + a8;
+  uint16_t address = 0xFF00 | bus->read(pc++);
   bus->write(address, a);
   cycles_last_taken = 12;
 }
@@ -150,8 +148,7 @@ void Cpu::LDH_atu8_A() {
 /* F0: LD A, (a8)
  * Put value at address $FF00 + n into A. */
 void Cpu::LDH_A_atu8() {
-  uint8_t a8 = bus->read(pc++);
-  uint16_t address = 0xFF00 + a8;
+  uint16_t address = 0xFF00 | bus->read(pc++);
   a = bus->read(address);
   cycles_last_taken = 12;
 }
@@ -289,16 +286,14 @@ void Cpu::LD_HL_u16() {
 /* 02: LD (BC), A
  * Store contents of A into mem location specified by BC. */
 void Cpu::LD_atBC_A() {
-  uint16_t address = bc();
-  bus->write(address, a);
+  bus->write(bc(), a);
   cycles_last_taken = 8;
 }
 
 /* 12: LD (BC), A
  * Store contents of A into mem location specified by DE. */
 void Cpu::LD_atDE_A() {
-  uint16_t address = de();
-  bus->write(address, a);
+  bus->write(de(), a);
   cycles_last_taken = 8;
 }
 
@@ -307,10 +302,10 @@ void Cpu::LD_atDE_A() {
  * 16-bit immediate operand a16, and store the upper byte of SP at
  * address a16 + 1. */
 void Cpu::LD_atu16_SP() {
-  uint8_t msb = sp >> 8;
-  uint8_t lsb = sp & 0xFF;
-  bus->write(pc++, lsb);
-  bus->write(pc++, msb);
+  uint16_t address = bus->read(pc++);
+  address |= bus->read(pc++) << 8;
+  bus->write(address, sp & 0xFF);
+  bus->write(++address, sp >> 8);
   cycles_last_taken = 20;
 }
 

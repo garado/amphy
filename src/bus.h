@@ -6,15 +6,19 @@
 #ifndef BUS_H
 #define BUS_H
 
-#define ROM_B0_START_ADDR  0x0000
-#define ROM_B1_START_ADDR  0x4000
-#define VRAM_START_ADDR    0x8000
-#define EXTRAM_START_ADDR  0xA000
-#define WRAM0_START_ADDR   0xC000
-#define WRAM1_START_ADDR   0xD000
-#define ECHORAM_START_ADDR 0xE000
-#define OAM_START_ADDR     0xFE00
-#define IO_START_ADDR      0xFF00
+// Starting address for different regions of memory
+#define ROM0_START    0x0000
+#define ROM1_START    0x4000
+#define VRAM_START    0x8000
+#define EXTRAM_START  0xA000
+#define WRAM0_START   0xC000
+#define WRAM0_START   0xC000
+#define WRAM1_START   0xD000
+#define ECHRAM_START  0xE000
+#define OAM_START     0xFE00
+#define INVALID_START 0xFEA0
+#define IO_START      0xFF00
+#define HRAM_START    0xFF80
 
 class Bus
 {

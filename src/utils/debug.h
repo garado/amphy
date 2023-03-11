@@ -21,9 +21,12 @@ class Debugger
     int af, bc, de, hl;
     int sp, pc;
     int op;
+
+  public:
     int stepCycles;
     int pcBreakpoint;
-    bool ffSet, bpSet;
+    int memBreakpoint;
+    bool ffSet, bpSet, mbpSet;
     void FetchState();
 
   public:

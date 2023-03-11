@@ -27,7 +27,7 @@ uint8_t * Cpu::Decode16bitReg(uint8_t opcode)
   case 0x03:  return &e; break;
   case 0x04:  return &h; break;
   case 0x05:  return &l; break;
-  case 0x06:  return bus->GetAddressPointer(hl()); break; // $hl
+  case 0x06:  return bus->GetAddressPointer(hl()); break;
   case 0x07:  return &a; break;
   case 0x08:  return &b; break;
   case 0x09:  return &c; break;
@@ -35,7 +35,7 @@ uint8_t * Cpu::Decode16bitReg(uint8_t opcode)
   case 0x0b:  return &e; break;
   case 0x0c:  return &h; break;
   case 0x0d:  return &l; break;
-  case 0x0e:  return bus->GetAddressPointer(hl()); break; // $hl
+  case 0x0e:  return bus->GetAddressPointer(hl()); break;
   case 0x0f:  return &a; break;
   default:    return NULL; break;
   }
@@ -94,44 +94,27 @@ void Cpu::Decode16bitOpcode(uint8_t opcode)
   uint8_t msb = (opcode >> 4) & 0xF;
   uint8_t lsb = opcode & 0xF;
 
-  uint8_t * reg = Decode16bitReg(opcode);
-
-  if (reg == NULL) {
-    std::cout << __PRETTY_FUNCTION__ << ": NULL pointer!" << std::endl;
-    std::cout << "PC: 0x" << std::hex << (int) pc << std::endl;
-    std::cout << "Opcode: 0xCB" << std::hex << (int) opcode << std::endl;
-    //debugger->Regdump();
-    exit(EXIT_FAILURE);
-  }
-
+  uint8_t * reg  = Decode16bitReg(opcode);
   uint8_t bitpos = Decode16bitBitPos(opcode);
 
   switch (msb) {
   case 0x0: 
-    if (lsb == 0x6) RLC_atHL(); break;
-    if (lsb == 0xE) RRC_atHL(); break;
-    if (lsb < 0x8)  RLC(reg);
+    if (lsb < 0x8)  RLC(reg); 
     if (lsb >= 0x8) RRC(reg);
     break;
 
   case 0x1:
-    if (lsb == 0x6) RL_atHL(); break;
-    if (lsb == 0xE) RR_atHL(); break;
-    if (lsb < 0x8)  RL(reg);
+    if (lsb < 0x8)  RL(reg); 
     if (lsb >= 0x8) RR(reg);
     break; 
   
   case 0x2:
-    if (lsb == 0x6) SLA_atHL(); break;
-    if (lsb == 0xE) SRA_atHL(); break;
-    if (lsb < 0x8)  SLA(reg);
+    if (lsb < 0x8)  SLA(reg); 
     if (lsb >= 0x8) SRA(reg);
     break;
 
   case 0x3:
-    if (lsb == 0x6) SWAP_atHL(); break;
-    if (lsb == 0xE) SRL_atHL();  break;
-    if (lsb < 0x8)  SWAP(reg);
+    if (lsb < 0x8)  SWAP(reg); 
     if (lsb >= 0x8) SRL(reg);
     break;
 
@@ -139,33 +122,21 @@ void Cpu::Decode16bitOpcode(uint8_t opcode)
   case 0x5:
   case 0x6:
   case 0x7:
-    if (lsb == 0x6 || lsb == 0xE) {
-      BIT_n_atHL(bitpos);
-    } else {
-      BIT_n(reg, bitpos);
-    }
+    BIT_n(reg, bitpos);
     break;
 
   case 0x8:
   case 0x9:
   case 0xa:
   case 0xb:
-    if (lsb == 0x6 || lsb == 0xE) {
-      RES_n_atHL(bitpos);
-    } else {
-      RES_n(reg, bitpos);
-    }
+    RES_n(reg, bitpos);
     break;
 
   case 0xc:
   case 0xd:
   case 0xe:
   case 0xf:
-    if (lsb == 0x6 || lsb == 0xE) {
-      SET_n_atHL(bitpos);
-    } else {
-      SET_n(reg, bitpos);
-    }
+    SET_n(reg, bitpos);
     break;
 
   default:   break; 

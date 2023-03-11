@@ -1,3 +1,4 @@
+
 /* █▀▀ █▀█ █░█ */ 
 /* █▄▄ █▀▀ █▄█ */
 
@@ -70,7 +71,7 @@ bool Cpu::GetFlag(CpuFlags flag) {
  *            This occurs when there is a carry from the 3rd to the 4th bit. */
 void Cpu::SetHalfCarryAdd(uint8_t a, uint8_t b) {
   uint16_t sum = (a & 0xF) + (b & 0xF);
-  bool val = sum > 0xF;
+  bool val = (sum & 0x10) == 0x10;
   AssignFlag(HALF_CARRY, val);
 }
 
@@ -131,7 +132,7 @@ void Cpu::SetSubFlags(uint8_t a, uint8_t b) {
  * For 16-bit numbers, this occurs when there is a carry from bit 11 to bit 12. */
 void Cpu::SetHalfCarryAdd(uint16_t a, uint16_t b) {
   uint16_t sum = (a & 0xFFF) + (b & 0xFFF);
-  bool val = sum > 0xFFF;
+  bool val = (sum & 0x1000) == 0x1000;
   AssignFlag(HALF_CARRY, val);
 }
 
@@ -208,14 +209,14 @@ uint8_t Cpu::execute() {
     std::string opcode_name = opcode_8bit_names[op];
     if (opcode_name == "NULL") {
       std::cout << __PRETTY_FUNCTION__ << ": Trying to access NULL opcode 0x" << std::hex << (int) op << std::endl;
-      std::cout << "Current pc is 0x" << std::hex << (int) pc << std::endl;
+      debugger->RegdumpGBDoc();
       return FAILURE;
     } else {
       (this->*opcodes_8bit[op])();
     }
   }
 
-  // janky di instruction implementation
+  // Janky DI implementation
   if (disableInterrupts != 0) {
     --disableInterrupts;
     if (disableInterrupts == 0) {
@@ -223,7 +224,7 @@ uint8_t Cpu::execute() {
     }
   }
 
-  // janky ei instruction implementation
+  // Janky EI implementation
   if (enableInterrupts != 0) {
     --enableInterrupts;
     if (enableInterrupts == 0) {
@@ -233,13 +234,6 @@ uint8_t Cpu::execute() {
 
   return SUCCESS;
 };
-
-uint16_t Cpu::FetchNextTwoBytes(void)
-{
-  uint8_t lsb = bus->read(++pc);
-  uint8_t msb = bus->read(++pc);
-  return (msb << 8) | lsb;
-}
 
 /* █▀ ▀█▀ ▄▀█ █▀▀ █▄▀    █░█ █▀▀ █░░ █▀█ █▀▀ █▀█ █▀ */ 
 /* ▄█ ░█░ █▀█ █▄▄ █░█    █▀█ ██▄ █▄▄ █▀▀ ██▄ █▀▄ ▄█ */ 

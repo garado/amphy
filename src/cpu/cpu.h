@@ -48,6 +48,7 @@ class Cpu
   public:
     // Other flags
     bool gbdoc = false;
+    bool debug = false;
 
   public:
     // Array of function pointers to 8-bit opcodes.
@@ -90,15 +91,6 @@ class Cpu
       "RET_NC",     "POP_DE",     "JP_NC_u16",  "NULL",       "CALL_NC_u16",  "PUSH_DE",    "SUB_A_u8",   "RST_10h",    "RET_C",        "RETI",       "JP_C_u16",   "NULL",     "CALL_C_u16", "NULL",     "SBC_A_u8",   "RST_18h",  // D0+
       "LDH_atu8_A", "POP_HL",     "LDH_atC_A",  "NULL",       "NULL",         "PUSH_HL",    "AND_A_u8",   "RST_20h",    "ADD_SP_i8",    "JP_HL",      "LD_atu16_A", "NULL",     "NULL",       "NULL",     "XOR_A_u8",   "RST_28h",  // E0+
       "LDH_A_atu8", "POP_AF",     "LDH_A_atC",  "DI",         "NULL",         "PUSH_AF",    "OR_A_u8",    "RST_30h",    "LD_HL_SP_i8",  "LD_SP_HL",   "LD_A_atu16", "EI",       "NULL",       "NULL",     "CP_A_u8",    "RST_38h",  // F0+
-    };
-
-
-    // Array of function pointers to 16-bit opcodes.
-    typedef void (Cpu::*Opcode_16bit)();
-    Opcode_16bit opcodes_16bit[256] = { 
-    };
-
-    const char* opcode_16bit_names[256] = { 
     };
 
   private:
@@ -431,7 +423,6 @@ class Cpu
     void Push16Bit(uint16_t val);
 
     uint8_t   FetchNextByte(void);
-    uint16_t  FetchNextTwoBytes(void);
 
     // =========== 16-bit ===============
     uint8_t * Decode16bitReg(uint8_t opcode);

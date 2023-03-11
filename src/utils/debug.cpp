@@ -94,6 +94,7 @@ void Debugger::Stackdump(void) {
 void Debugger::step() {
   // Update fastforward/breakpoint vars
   FetchState();
+
   if (ffSet) {
     --stepCycles;
     if (stepCycles == 0) {
@@ -101,7 +102,9 @@ void Debugger::step() {
     } else {
       return;
     }
-  } else if (bpSet) {
+  }
+
+  if (bpSet) {
     if (pc == pcBreakpoint) {
       bpSet = false;
     } else {
@@ -109,7 +112,7 @@ void Debugger::step() {
     }
   }
 
-  Regdump();
+  RegdumpGBDoc();
 
   // Parse user input for fastforward/bkpt
   bool stepSuccess = false;
@@ -145,13 +148,17 @@ void Debugger::step() {
       stepCycles = num;
       ffSet = true;
     } else if (cmd == "memview") {
-      std::cout << "Value at mem address 0x" << numStr << " is " << (int) bus->read(num) << std::endl;
+      std::cout << "Value at mem address 0x" << numStr << " is " << std::hex << std::setw(4)
+        << std::setfill('0') << (int) bus->read(num) << std::endl;
       continue;
     } else if (cmd == "q" || cmd == "quit"){
       std::cout << "Exit command received: quitting Amphy" << std::endl;
     } else if (cmd == "stack") {
       Stackdump();
       continue;
+    } else if (cmd == "mbp") {
+      memBreakpoint = num;
+      std::cout << "Memory access breakpoint set at 0x" << numStr << std::endl;
     } else {
       std::cout << "Debugger::step(): Invalid command (use ff or bp)"
             << std::endl;

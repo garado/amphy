@@ -9,6 +9,7 @@
 #include <sstream>
 #include <vector>
 
+#include "utils/debug.h"
 #include "bus.h"
 #include "defines.h"
 
@@ -51,31 +52,29 @@ uint8_t Bus::read(uint16_t address) const {
     return 0x90;
   }
 
-  if (address <= 0x3FFF) {
+  if (address < ROM1_START) {
     return rom_00.at(address);
-  } else if (address <= 0x7FFF) {
-    // SWITCHABLE BANK NOT IMPLEMENTED
-    return rom_01.at(address - 0x4000);
-  } else if (address <= 0x9FFF) {
-    // SWITCHABLE BANK NOT IMPLEMENTED
-    return vram.at(address - 0x8000);
-  } else if (address <= 0xBFFF) {
-    // SWITCHABLE BANK NOT IMPLEMENTED
-    return ext_ram.at(address - 0xA000);
-  } else if (address <= 0xCFFF) {
-    return wram_0.at(address - 0xC000);
-  } else if (address <= 0xDFFF) {
-    // SWITCHABLE BANK NOT IMPLEMENTED
-    return wram_1.at(address - 0xD000);
-  } else if (address <= 0xFDFF) {
-    return ech_ram.at(address - 0xE000);
-  } else if (address <= 0xFE9F) {
-    return oam.at(address - 0xFE00);
-  } else if (address <= 0xFF7F) {
-    return io_reg.at(address - 0xFF00);
-  } else if (address <= 0xFFFE) {
-    return hram.at(address - 0xFF80);    
-  } else if (address <= 0xFFFF) {
+  } else if (address < VRAM_START) {
+    return rom_01.at(address - ROM1_START);
+  } else if (address < EXTRAM_START) {
+    return vram.at(address - VRAM_START);
+  } else if (address < WRAM0_START) {
+    return ext_ram.at(address - EXTRAM_START);
+  } else if (address < WRAM1_START) {
+    return wram_0.at(address - WRAM0_START);
+  } else if (address < ECHRAM_START) {
+    return wram_1.at(address - WRAM1_START);
+  } else if (address < OAM_START) {
+    return ech_ram.at(address - ECHRAM_START);
+  } else if (address < INVALID_START) {
+    return oam.at(address - OAM_START);
+  } else if (address < IO_START) {
+    std::cout << "INVALID MEMORY REGION READ" << std::endl;
+  } else if (address < HRAM_START) {
+    return io_reg.at(address - IO_START);
+  } else if (address < 0xFFFF) {
+    return hram.at(address - HRAM_START);    
+  } else if (address == 0xFFFF) {
     return int_enable;
   }
 
@@ -83,35 +82,34 @@ uint8_t Bus::read(uint16_t address) const {
   return FAILURE;
 }
 
-/* Bus::write
- * Memory write function
+/* @Function Bus::write
+ * @param address Address to write to
+ * @param val Value to store into address
  */
 void Bus::write(uint16_t address, uint8_t val) {
-  if (address <= 0x3FFF) {
+  if (address < ROM1_START) {
     rom_00.at(address) = val;
-  } else if (address <= 0x7FFF) {
-    // SWITCHABLE BANK NOT IMPLEMENTED
-    rom_01.at(address - 0x4000) = val;
-  } else if (address <= 0x9FFF) {
-    // SWITCHABLE BANK NOT IMPLEMENTED
-    vram.at(address - 0x8000) = val;
-  } else if (address <= 0xBFFF) {
-    // SWITCHABLE BANK NOT IMPLEMENTED
-    ext_ram.at(address - 0xA000) = val;
-  } else if (address <= 0xCFFF) {
-    wram_0.at(address - 0xC000) = val;
-  } else if (address <= 0xDFFF) {
-    // SWITCHABLE BANK NOT IMPLEMENTED
-    wram_1.at(address - 0xD000) = val;
-  } else if (address <= 0xFDFF) {
-    ech_ram.at(address - 0xE000) = val;
-  } else if (address <= 0xFE9F) {
-    oam.at(address - 0xFE00) = val;
-  } else if (address <= 0xFF7F) {
-    io_reg.at(address - 0xFF00) = val;
-  } else if (address <= 0xFFFE) {
-    hram.at(address - 0xFF80) = val;
-  } else if (address <= 0xFFFF) {
+  } else if (address < VRAM_START) {
+    rom_01.at(address - ROM1_START) = val;
+  } else if (address < EXTRAM_START) {
+    vram.at(address - VRAM_START) = val;
+  } else if (address < WRAM0_START) {
+    ext_ram.at(address - EXTRAM_START) = val;
+  } else if (address < WRAM1_START) {
+    wram_0.at(address - WRAM0_START) = val;
+  } else if (address < ECHRAM_START) {
+    wram_1.at(address - WRAM1_START) = val;
+  } else if (address < OAM_START) {
+    ech_ram.at(address - ECHRAM_START) = val;
+  } else if (address < INVALID_START) {
+    oam.at(address - OAM_START) = val;
+  } else if (address < IO_START) {
+    std::cout << "INVALID MEMORY REGION READ" << std::endl;
+  } else if (address < HRAM_START) {
+    io_reg.at(address - IO_START) = val;
+  } else if (address < 0xFFFF) {
+    hram.at(address - HRAM_START) = val;    
+  } else if (address == 0xFFFF) {
     int_enable = val;
   }
 }
@@ -159,32 +157,32 @@ uint8_t Bus::CopyRom(std::string fname) {
   return SUCCESS;
 }
 
-// i DO NOT know if this works
+// Return a pointer to a memory value
 uint8_t * Bus::GetAddressPointer(uint16_t address)
 {
   std::vector <uint8_t>::iterator it;
   if (address <= 0x3FFF) {
-    *it = rom_00.at(address);
+    it = rom_00.begin();
   } else if (address <= 0x7FFF) {
-    *it = rom_01.at(address - 0x4000);
+    it = rom_01.begin() + (address - 0x4000);
   } else if (address <= 0x9FFF) {
-    *it = vram.at(address - 0x8000);
+    it = vram.begin() + (address - 0x8000);
   } else if (address <= 0xBFFF) {
-    *it = ext_ram.at(address - 0xA000);
+    it = ext_ram.begin() + (address - 0xA000);
   } else if (address <= 0xCFFF) {
-    *it = wram_0.at(address - 0xC000);
+    it = wram_0.begin() + (address - 0xC000);
   } else if (address <= 0xDFFF) {
-    *it = wram_1.at(address - 0xD000);
+    it = wram_1.begin() + (address - 0xD000);
   } else if (address <= 0xFDFF) {
-    *it = ech_ram.at(address - 0xE000);
+    it = ech_ram.begin() + (address - 0xE000);
   } else if (address <= 0xFE9F) {
-    *it = oam.at(address - 0xFE00);
+    it = oam.begin() + (address - 0xFE00);
   } else if (address <= 0xFF7F) {
-    *it = io_reg.at(address - 0xFF00);
+    it = io_reg.begin() + (address - 0xFF00);
   } else if (address <= 0xFFFE) {
-    *it = hram.at(address - 0xFF80);
+    it = hram.begin() + (address - 0xFF80);
   } else if (address <= 0xFFFF) {
-    *it = int_enable;
+    // it = &int_enable;
   }
   return &(*it);
 }

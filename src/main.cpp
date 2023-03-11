@@ -23,12 +23,15 @@ int main( int argc, char* argv[] )
 
   // Parse flags
   // -g gbdoc mode
+  // -d debug mode (step)
   int c;
-  while ((c = getopt(argc, argv, ":g")) != -1) {
+  while ((c = getopt(argc, argv, ":gd")) != -1) {
     switch (c) {
       case 'g':
         cpu->gbdoc = true;
         break;
+      case 'd':
+        cpu->debug = true;
       default:
         break;
     }
@@ -71,10 +74,11 @@ int main( int argc, char* argv[] )
     }
 
     try {
+      if (cpu->debug) debug->step();
       cpu->execute();
     } catch (...) {
       std::cout << __PRETTY_FUNCTION__ << ": Fatal CPU error: exiting" << std::endl;
-      debug->Regdump();
+      debug->RegdumpGBDoc();
       break;
     }
       
