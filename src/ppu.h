@@ -1,7 +1,6 @@
 
-/* ░█▀▀░█▀▄░█▀█░█▀█░█░█░▀█▀░█▀▀░█▀▀*/ 
-/* ░█░█░█▀▄░█▀█░█▀▀░█▀█░░█░░█░░░▀▀█*/
-/* ░▀▀▀░▀░▀░▀░▀░▀░░░▀░▀░▀▀▀░▀▀▀░▀▀▀*/
+/* █▀▀ █▀█ ▄▀█ █▀█ █░█ █ █▀▀ █▀ */
+/* █▄█ █▀▄ █▀█ █▀▀ █▀█ █ █▄▄ ▄█ */
 
 #ifndef PPU_H
 #define PPU_H
@@ -9,7 +8,7 @@
 #include <SDL2/SDL.h>
 #include "cpu/cpu.h"
 #include "bus.h"
-#include "win.h"
+#include "display/gba-sdl.h"
 
 #define OAM_SCAN_CYCLES     40
 #define PX_TRANSFER_CYCLES  4
@@ -77,7 +76,7 @@ class Ppu
 {
   private:
     Bus*    bus;
-    Window* win;
+    Display* disp;
     //uint8_t Ppu_State = OAM_SCAN;
     uint8_t Ppu_State = VBLANK; // blargg test rom init
 
@@ -98,13 +97,16 @@ class Ppu
     bool CanExecute(void);
 
   public:
+    void calcTimeToNextInterrupt();
+    uint16_t timeToNextInterrupt = 0;
+
     bool Execute(uint8_t cpu_cycles_elapsed);
     int cnt = 144;
 
     // Constructor & destructor
-    Ppu(Bus* bus_, Window* win_) {
+    Ppu(Bus* bus_, Display* disp_) {
       bus = bus_;
-      win = win_;
+      disp = disp_;
     }
 };
 

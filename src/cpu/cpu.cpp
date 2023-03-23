@@ -11,8 +11,23 @@
 #include <vector>
 
 #include "cpu.h"
+#include "../ppu.h"
 #include "../utils/debug.h"
 #include "../defines.h"
+
+/* @Function Cpu::tick()
+ * @brief Used to synchronize CPU with other processing units.
+ * The CPU runs on a 1MHz clock and the PPU/APU run on a
+ * 4MHz clock. tick() needs to be called within every instruction to 
+ * more precisely emulate concurrently running the PPU. */
+void Cpu::tick()
+{
+  bool ppu_exec_result = ppu->Execute(4);
+  if (ppu_exec_result == FAILURE) {
+    std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error" << std::endl;
+    debugger->RegdumpGBDoc();
+  }
+}
 
 /* @Function  Cpu::af()
  * @return    None
@@ -195,59 +210,74 @@ void Cpu::SetSubFlags(uint16_t a, uint16_t b) {
  * and pc is pushed to the stack and then set to the address
  * of the interrupt handler. */
 uint8_t Cpu::handleInterrupt() {
-  if (!ime) return false;
+  uint8_t ie  = bus->read(INTE);
+  uint8_t irq = bus->read(INTF);
 
-  uint8_t ie  = bus->read(0xFFFF);
-  uint8_t irq = bus->read(0xFF0F);
+  // If halted... unhalt
+  if (((ie & irq) != 0) && cpuHalted) {
+    cpuHalted = false;
+
+    // If interrupt was pending as halt was first called
+    // Halt bug: next byte after HALT read twice
+    if (prevInterruptState) {
+      op = bus->read(pc + 1);
+      (this->*opcodes_8bit[op])();
+      runTimer();
+      halt_bug_executed = true;
+      return true;
+    }
+  }
+
+  if (!ime) return false;
   uint8_t ret = false;
 
   uint8_t ie_vblank   = INT_VBLANK_MASK(ie);
   uint8_t irq_vblank  = INT_VBLANK_MASK(irq);
-  if (ie_vblank && irq_vblank) {
+  if (ie_vblank & irq_vblank) {
     Push16Bit(pc);
     pc = ISR_ADDR_VBLANK;
     ime_prev = ime;
-    bus->write(0xFF0F, INT_VBLANK_CLEAR(irq));
+    bus->write(INTF, INT_VBLANK_CLEAR(irq));
     return true;
   }
 
   uint8_t ie_stat  = INT_STAT_MASK(ie);
   uint8_t irq_stat = INT_STAT_MASK(irq);
-  if (ie_stat && irq_stat) {
+  if (ie_stat & irq_stat) {
     Push16Bit(pc);
     pc = ISR_ADDR_STAT;
     ime_prev = ime;
-    bus->write(0xFF0F, INT_STAT_CLEAR(irq));
+    bus->write(INTF, INT_STAT_CLEAR(irq));
     return true;
   }
 
   uint8_t ie_timer  = INT_TIMER_MASK(ie);
   uint8_t irq_timer = INT_TIMER_MASK(irq);
-  if (ie_timer && irq_timer) {
+  if (ie_timer & irq_timer) {
     Push16Bit(pc);
     pc = ISR_ADDR_TIMER;
     ime_prev = ime;
-    bus->write(0xFF0F, INT_TIMER_CLEAR(irq));
+    bus->write(INTF, INT_TIMER_CLEAR(irq));
     return true;
   }
 
   uint8_t ie_serial  = INT_SERIAL_MASK(ie); 
   uint8_t irq_serial = INT_SERIAL_MASK(irq);
-  if (ie_serial && irq_serial) {
+  if (ie_serial & irq_serial) {
     Push16Bit(pc);
     pc = ISR_ADDR_SERIAL;
     ime_prev = ime;
-    bus->write(0xFF0F, INT_SERIAL_CLEAR(irq));
+    bus->write(INTF, INT_SERIAL_CLEAR(irq));
     return true;
   }
 
   uint8_t ie_joypad  = INT_JOYPAD_MASK(ie);
   uint8_t irq_joypad = INT_JOYPAD_MASK(irq);
-  if (ie_joypad && irq_joypad) {
+  if (ie_joypad & irq_joypad) {
     Push16Bit(pc);
     pc = ISR_ADDR_JOYPAD;
     ime_prev = ime;
-    bus->write(0xFF0F, INT_JOYPAD_CLEAR(irq));
+    bus->write(INTF, INT_JOYPAD_CLEAR(irq));
     return true;
   }
 
@@ -261,8 +291,11 @@ uint8_t Cpu::handleInterrupt() {
  * TIMA is enabled by and incremented at the clock frequency specified by TAC. */
 void Cpu::runTimer() {
   uint16_t old_sysclk = sysclk;
-  sysclk += cycles_last_taken / 4;
+  sysclk += cycles_last_taken;
+
+  bus->allow_div = true; // TODO jank
   bus->write(DIV, sysclk >> 8);
+  bus->allow_div = false;
 
   // TIMA is incremented at the frequency specified by TAC.
   // When the value overflows (> 0xFF), it is reset to the value
@@ -294,6 +327,7 @@ void Cpu::runTimer() {
     // Request interrupt and reset TIMA to value in TMA if
     // overflow occurs. Increment normally otherwise.
     if (tima == 0xFF) {
+
       uint8_t tma = bus->read(TMA);   // Reset to TMA
       bus->write(TIMA, tma);
 
@@ -313,13 +347,23 @@ void Cpu::runTimer() {
 uint8_t Cpu::execute() {
   // Check for interrupts first
   if (handleInterrupt()) {
+    if (halt_bug_executed) {
+      halt_bug_executed = false;
+      return SUCCESS;
+    }
     cycles_last_taken = 20; // interrupt handler takes 20 cycles
     runTimer();
     return SUCCESS;
   }
 
+  if (cpuHalted) {
+    if (gbdoc) debugger->RegdumpGBDoc();
+    runTimer();
+    return SUCCESS;
+  }
 
-
+  if (gbdoc) debugger->RegdumpGBDoc();
+  if (debug) debugger->step();
   op = bus->read(pc++);
 
   // Check for 8bit or 16bit opcode
@@ -346,6 +390,8 @@ uint8_t Cpu::execute() {
     }
   }
 
+  runTimer();
+
   /* The effect of EI is delayed by 1 instruction.
    * EI_counter is a counter initialized to 2 when EI instruction
    * is called. It decrements on every instruction so that
@@ -356,8 +402,6 @@ uint8_t Cpu::execute() {
       ime = 1;
     }
   }
-
-  runTimer();
 
   return SUCCESS;
 };

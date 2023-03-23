@@ -43,6 +43,14 @@ typedef enum CartType {
   MBC7_SEN_RUM_RAM_BAR = 0x22
 } CartType;
 
+/* Bus::init
+ * Initializes registers to their post-boot rom values */
+void Bus::init() {
+  allow_div = true;
+  write(DIV, 0x1E);
+  allow_div = false;
+}
+
 /* Bus::read
  * Memory read function
  * @param address The address to read from */
@@ -86,8 +94,11 @@ uint8_t Bus::read(uint16_t address) const {
  * @param address Address to write to
  * @param val Value to store into address */
 void Bus::write(uint16_t address, uint8_t val) {
-  // Any write to DIV timer sets it to 0.
-  if (address == DIV) val = 0;
+  // Any write to DIV timer sets it to 0
+  if (!allow_div && address == DIV) val = 0;
+
+  // Upper 5 TAC bits are pulled up to 1
+  if (address == TAC) val |= 0b11111000;
 
   if (address < ROM1_START) {
     rom_00.at(address) = val;

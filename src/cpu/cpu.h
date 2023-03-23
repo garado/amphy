@@ -52,7 +52,7 @@ class Cpu
 {
   private:
     // Internal registers
-    uint16_t sysclk = 0;
+    uint16_t sysclk = 0x1EF0;
 
     uint8_t a = 0x01; // gbdoc init
     uint8_t f = 0xB0;
@@ -78,15 +78,23 @@ class Cpu
     // Misc vars
     int   cycleCount = 0; // in t-cycles
     uint8_t cycles_last_taken = 0;
-    bool  cpuEnabled = true;
+    bool  cpuHalted = false;
+    uint8_t prevInterruptState = 0;
 
     // Interrupts
     bool ime = true;
     bool ime_prev = true;
+    bool halt_bug_executed = false;
     uint8_t EI_counter = 0;
+
+  private:
+    Bus* bus;
+    Ppu* ppu;
 
   public:
     // Other flags
+    bool divwrite_timer = false;
+    Debugger* debugger;
     bool gbdoc = false;
     bool debug = false;
 
@@ -135,6 +143,7 @@ class Cpu
 
   private:
     uint8_t handleInterrupt();
+    void tick();
 
     // =========== 8-bit ===============
     // Rotate/shift
@@ -467,9 +476,7 @@ class Cpu
     uint8_t   FetchNextByte(void);
 
     // =========== 16-bit ===============
-    uint8_t * Decode16bitReg(uint8_t opcode);
-    void Decode16bitOpcode(uint8_t opcode);
-    uint8_t Decode16bitBitPos(uint8_t opcode);
+    void Decode16bitOpcode(uint8_t op);
     void RLC(uint8_t * reg);
     void RRC(uint8_t * reg);
     void RL(uint8_t * reg);
@@ -504,12 +511,13 @@ class Cpu
     void AddCycles(uint8_t cycles) { cycleCount += cycles; }
     uint8_t GetCycles() { return cycleCount; }
 
-    // Register helper functions
+    // Set register equal to a value
     void af(uint16_t af);
     void bc(uint16_t bc);
     void de(uint16_t de);
     void hl(uint16_t hl);
-    
+   
+    // Return value of registers
     uint16_t af() const { return (a << 8) | f; }
     uint16_t bc() const { return (b << 8) | c; }
     uint16_t de() const { return (d << 8) | e; }
@@ -521,14 +529,11 @@ class Cpu
     uint8_t get_last_cycles() const { return cycles_last_taken; }
 
   public:
-    Cpu(Bus* bus_, Debugger* debug_) {
+    Cpu(Bus* bus_, Debugger* debug_, Ppu* ppu_) {
       bus = bus_;
       debugger = debug_;
+      ppu = ppu_;
     }
-
-  private:
-    Bus* bus;
-    Debugger* debugger;
 };
 
 #endif

@@ -6,9 +6,8 @@
 #include <SDL2/SDL.h>
 #include "ppu.h"
 #include "bus.h"
-#include "win.h"
-
-#define PPU_DEBUG
+#include "display/gba-sdl.h"
+#include "defines.h"
 
 /*                  240                       68
  *          ◄───────────────────────────► ◄──────────►
@@ -66,8 +65,6 @@ bool Ppu::Execute(uint8_t cpu_cycles_elapsed)
 void Ppu::OAMScan(void)
 {
   Ppu_State = PIXEL_TRANSFER;
-
-// During each scanline's OAM scan, the LCD controller compares LY to each sprite's Y position to find the 10 sprites on that line that appear first in OAM ($FE00-$FE03 being the first). It discards the rest, allowing only 10 sprites to be displayed on any one line. When this limit is exceeded, sprites appearing later in OAM won't be displayed. To keep unused sprites from affecting onscreen sprites, set their Y coordinate to Y = 0 or Y >= 160 (144 + 16) (Note : Y <= 8 also works if sprite size is set to 8x8). Just setting the X coordinate to X = 0 or X >= 168 (160 + 8) on a sprite will hide it, but it will still affect other sprites sharing the same lines. 
 
   uint16_t ly = bus->read(LY);
 

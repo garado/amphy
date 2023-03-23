@@ -426,13 +426,15 @@ void Cpu::ADD_HL_SP() {
 void Cpu::ADD_SP_i8() {
   int8_t i8 = bus->read(pc++);
 
-  int16_t hc_sum = (sp & 0xF) + (i8 & 0xF);
+  uint16_t hc_sum = (sp & 0xF) + (i8 & 0xF);
   bool hc_val = (hc_sum & 0x10) == 0x10;
 
   uint16_t c_sum = (sp & 0xFF) + (i8 & 0xFF);
   bool c_val = (c_sum & 0x100) == 0x100;
   sp += i8;
 
+  AssignFlag(HALF_CARRY, hc_val);
+  AssignFlag(CARRY, c_val);
   AssignFlag(ZERO, 0);
   AssignFlag(SUB, 0);
   cycles_last_taken = 16;

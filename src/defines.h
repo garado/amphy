@@ -8,15 +8,58 @@
 #define FAILURE 1
 #define SUCCESS 0
 
-// Registers (required by cpu and bus)
-#define DIV  0xFF04 // Divider register
-#define TIMA 0xFF05 // Timer counter
-#define TMA  0xFF06 // Timer modulo
-#define TAC  0xFF07 // Timer control
-#define INTE 0xFFFF // Interrupt enable
-#define INTF 0xFF0F // Interrupt flag
-#define JOYP 0xFF00 // Joypad
-#define SERB 0xFF01 // Serial transfer data
-#define SERC 0xFF02 // Serial transfer control
+/* IO registers */
+#define JOYP 0xFF00 // P1/JOYP: Joypad
+#define SERB 0xFF01 // SB: Serial byte
+#define SERC 0xFF02 // SC: Serial control
+#define DIV  0xFF04 // DIV: Clock divider
+#define TIMA 0xFF05 // TIMA: Timer value
+#define TMA  0xFF06 // TMA: Timer reload/modulo
+#define TAC  0xFF07 // TAC: Timer control
+#define INTF 0xFF0F // IF: Interrupt requests
+#define INTE 0xFFFF // IE: Interrupt enable
+
+#define NR10 0xFF10 // NR10: Audio channel 1 sweep
+#define NR11 0xFF11 // NR11: Audio channel 1 sound length/wave duty
+#define NR12 0xFF12 // NR12: Audio channel 1 envelope
+#define NR13 0xFF13 // NR13: Audio channel 1 frequency
+#define NR14 0xFF14 // NR14: Audio channel 1 control
+
+#define NR21 0xFF16 // NR21: Audio channel 2 sound length/wave duty
+#define NR22 0xFF17 // NR22: Audio channel 2 envelope
+#define NR23 0xFF18 // NR23: Audio channel 2 frequency
+#define NR24 0xFF19 // NR24: Audio channel 2 control
+
+#define NR30 0xFF1A // NR30: Audio channel 3 enable
+#define NR31 0xFF1B // NR31: Audio channel 3 sound length
+#define NR32 0xFF1C // NR32: Audio channel 3 volume
+#define NR33 0xFF1D // NR33: Audio channel 3 frequency
+#define NR34 0xFF1E // NR34: Audio channel 3 control
+
+#define NR41 0xFF20 // NR41: Audio channel 4 sound length
+#define NR42 0xFF21 // NR42: Audio channel 4 volume
+#define NR43 0xFF22 // NR43: Audio channel 4 frequency
+#define NR44 0xFF23 // NR44: Audio channel 4 control
+
+#define NR50 0xFF24 // NR50: Audio output mapping
+#define NR51 0xFF25 // NR51: Audio channel mapping
+#define NR52 0xFF26 // NR52: Audio channel control
+
+// FF30 – $FF3F: Wave pattern
+
+#define LCDC 0xFF40 // LCDC: LCD control
+#define STAT 0xFF41 // STAT: LCD status
+#define SCY  0xFF42 // SCY: Background vert. scroll
+#define SCX  0xFF43 // SCX: Background horiz. scroll
+#define LY   0xFF44 // LY: LCD Y coordinate
+#define LYC  0xFF45 // LYC: LCD Y compare
+#define DMA  0xFF46 // DMA: OAM DMA source address
+#define BGP  0xFF47 // BGP: Background palette
+#define OBP0 0xFF48 // OBP0: OBJ palette 0
+#define OBP1 0xFF49 // OBP1: OBJ palette 1
+#define WY   0xFF4A // WY: Window Y coord
+#define WX   0xFF4B // WX: Window X coord
+#define BOOT 0xFF50 // Boot ROM control
+
 
 #endif

@@ -148,7 +148,7 @@ void Debugger::step() {
       stepCycles = num;
       ffSet = true;
     } else if (cmd == "memview") {
-      std::cout << "Value at mem address 0x" << numStr << " is " << std::hex << std::setw(4)
+      std::cout << "Value at mem address 0x" << numStr << " is " << std::hex << std::setw(2)
         << std::setfill('0') << (int) bus->read(num) << std::endl;
       continue;
     } else if (cmd == "q" || cmd == "quit"){

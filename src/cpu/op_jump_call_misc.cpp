@@ -109,10 +109,12 @@ void Cpu::SCF() {
   cycles_last_taken = 4;
 }
 
-/* 07: HALT
+/* 76: HALT
  * Power down CPU til interrupt occurs. */
 void Cpu::HALT() {
-  cpuEnabled = false;
+  cpuHalted = true;
+  prevInterruptState = bus->read(INTE) & bus->read(INTF);
+  bus->write(INTF, 0x00);
   cycles_last_taken = 4;
 }
 
@@ -254,7 +256,7 @@ void Cpu::CALL_flag_u16(CpuFlags flag, uint8_t value)
   if (GetFlag(flag) == value) {
     Push16Bit(pc);
     pc = address;
-    cycles_last_taken = 16;
+    cycles_last_taken = 24;
   } else {
     cycles_last_taken = 12;
   }
@@ -295,7 +297,7 @@ void Cpu::RST_08h() {
 
 void Cpu::RST_10h() {
   Push16Bit(pc);
-  pc = 0x08;
+  pc = 0x10;
   cycles_last_taken = 32;
 }
 

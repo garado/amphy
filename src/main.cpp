@@ -6,7 +6,7 @@
 #include "cpu/cpu.h"
 #include "utils/debug.h"
 #include "ppu.h"
-#include "win.h"
+#include "display/gba-sdl.h"
 #include "bus.h"
 #include "defines.h"
 
@@ -15,11 +15,13 @@ int main( int argc, char* argv[] )
   Cpu* cpu;
   Debugger* debug;
   
-  Window* win = new Window;
+  Display* disp = new Display;
   Bus* bus = new Bus;
-  Ppu* ppu = new Ppu(bus, win);
-  cpu   = new Cpu(bus, debug);
+  Ppu* ppu = new Ppu(bus, disp);
+  cpu   = new Cpu(bus, debug, ppu);
   debug = new Debugger(cpu, bus, ppu);
+  cpu->debugger = debug;
+  debug->cpu = cpu;
 
   // Parse flags
   // -g gbdoc mode
@@ -42,7 +44,8 @@ int main( int argc, char* argv[] )
   if (argc > 1) {
     bus_status = bus->CopyRom(argv[argc-1]);  
   } else {
-    bus_status = bus->CopyRom("gba/testrom-06-ld.gb");  
+    std::cout << "No ROM provided! Exiting :(" << std::endl;
+    return EXIT_SUCCESS;
   }
 
   if (bus_status == FAILURE) {
@@ -53,28 +56,25 @@ int main( int argc, char* argv[] )
   // ly is initialized to 0x90 in blargg's tests?
   bus->write(LY, 0x90);
   bus->write(STAT, 0x81);
+  bus->init();
 
   // Start SDL and create new window
-  // if (win->init() == EXIT_FAILURE) {
-  //   std::cerr << "SDL: Failed to initialize" << std::endl;
-  // } else {
-  //   // Load media
-  //   if( !win->LoadMedia() ) {
-  //     std::cerr << "SDL: Failed to load media" << std::endl;
-  //   } else {
-  //     win->ApplyImg();
-  //   }
-  // }
+  if (disp->init() == EXIT_FAILURE) {
+    std::cerr << "SDL: Failed to initialize" << std::endl;
+  } else {
+    // Load media
+    if( disp->LoadMedia() == EXIT_FAILURE ) {
+      std::cerr << "SDL: Failed to load media" << std::endl;
+      disp->close();
+    } else {
+      disp->ApplyImg();
+    }
+  }
 
   // Main loop
   for (;;) {
-    if (cpu->gbdoc) {
-      debug->RegdumpGBDoc();
-    }
-
     // Run CPU
     try {
-      if (cpu->debug) debug->step();
       cpu->execute();
     } catch (...) {
       std::cout << __PRETTY_FUNCTION__ << ": Fatal CPU error: exiting" << std::endl;

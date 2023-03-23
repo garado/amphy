@@ -15,14 +15,14 @@ class Ppu;
 class Debugger
 {
   private:
-    Cpu* cpu;
-    Bus* bus;
-    Ppu* ppu;
     int af, bc, de, hl;
     int sp, pc;
     int op;
 
   public:
+    Cpu* cpu;
+    Bus* bus;
+    Ppu* ppu;
     int stepCycles;
     int pcBreakpoint;
     int memBreakpoint;

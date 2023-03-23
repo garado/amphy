@@ -11,91 +11,35 @@
 
 #include "../bus.h"
 
-/* @Function  Cpu::Decode16bitReg 
- * @param     opcode The opcode
- * @return    Pointer to the register or value to be operated on
- * @brief     The 16-bit opcode table follows a very specific pattern.
- *            The lower byte tells you which register (or value)
- *            the instruction operates on. */
-uint8_t * Cpu::Decode16bitReg(uint8_t opcode)
-{
-  uint8_t lsb = opcode & 0xF;
-  switch (lsb) {
-  case 0x00:  return &b; break;
-  case 0x01:  return &c; break;
-  case 0x02:  return &d; break;
-  case 0x03:  return &e; break;
-  case 0x04:  return &h; break;
-  case 0x05:  return &l; break;
-  case 0x06:  return bus->GetAddressPointer(hl()); break;
-  case 0x07:  return &a; break;
-  case 0x08:  return &b; break;
-  case 0x09:  return &c; break;
-  case 0x0a:  return &d; break;
-  case 0x0b:  return &e; break;
-  case 0x0c:  return &h; break;
-  case 0x0d:  return &l; break;
-  case 0x0e:  return bus->GetAddressPointer(hl()); break;
-  case 0x0f:  return &a; break;
-  default:    return NULL; break;
-  }
-}
-
-/* @Function  Cpu::Decode16bitReg 
- * @param     opcode The opcode
- * @return    A bit position 0-7
- * @brief     Returns a bit position for the BIT, SET, and RES instructions to operate on. */
-uint8_t Cpu::Decode16bitBitPos(uint8_t opcode)
-{
-  uint8_t msb = (opcode >> 4) & 0xF;
-  uint8_t lsb = opcode & 0xF;
-
-  switch (msb) {
-  case 0x4: // bit
-  case 0x8: // res
-  case 0xC: // set
-    if (lsb < 0x8)  return 0;
-    if (lsb >= 0x8) return 1;
-    break;
-
-  case 0x5:
-  case 0x9:
-  case 0xD:
-    if (lsb < 0x8)  return 2;
-    if (lsb >= 0x8) return 3;
-    break; 
-  
-  case 0x6:
-  case 0xA:
-  case 0xE:
-    if (lsb < 0x8)  return 4;
-    if (lsb >= 0x8) return 5;
-    break;
-
-  case 0x7:
-  case 0xB:
-  case 0xF:
-    if (lsb < 0x8)  return 6;
-    if (lsb >= 0x8) return 7;
-    break;
-
-  default: break;
-  }
-
-  return 0;
-}
-
 /* @Function  Cpu::Decode16bitOpcode
- * @param     opcode  lower byte of a 16-bit opcode
+ * @param     op lower byte of a 16-bit opcode
  * @brief     The 16bit opcode table is much more formulaic than the 8bit opcode table.
  * @return    none */ 
-void Cpu::Decode16bitOpcode(uint8_t opcode)
+void Cpu::Decode16bitOpcode(uint8_t op)
 {
-  uint8_t msb = (opcode >> 4) & 0xF;
-  uint8_t lsb = opcode & 0xF;
+  uint8_t msb = (op >> 4) & 0xF;
+  uint8_t lsb = op & 0xF;
 
-  uint8_t * reg  = Decode16bitReg(opcode);
-  uint8_t bitpos = Decode16bitBitPos(opcode);
+  uint8_t * reg;
+
+  // Decoding which register it operates on
+  uint8_t rlsb = (lsb + 1) & 0xF;
+  if (rlsb >= 0x8) rlsb -= 0x8;
+  
+  switch (rlsb) {
+    case 0x0:  reg = &a; break;
+    case 0x1:  reg = &b; break;
+    case 0x2:  reg = &c; break;
+    case 0x3:  reg = &d; break;
+    case 0x4:  reg = &e; break;
+    case 0x5:  reg = &h; break;
+    case 0x6:  reg = &l; break;
+    case 0x7:  reg = bus->GetAddressPointer(hl()); break;
+    default:   reg = NULL; break;
+  }
+
+  // Decoding bit position
+  uint8_t bitpos = ((op & 0x30) >> 3) | ((op & 0x08) >> 3);
 
   switch (msb) {
   case 0x0: 

@@ -60,6 +60,8 @@ class Bus
     uint8_t int_enable;
 
   public:
+    bool allow_div = false;
+    void init();
     uint8_t read(uint16_t address) const;
     void    write(uint16_t address, uint8_t val);
     uint8_t  CopyRom(std::string fname);
