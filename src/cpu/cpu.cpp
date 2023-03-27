@@ -231,8 +231,11 @@ uint8_t Cpu::handleInterrupt() {
   if (!ime) return false;
   uint8_t ret = false;
 
-  uint8_t ie_vblank   = INT_VBLANK_MASK(ie);
-  uint8_t irq_vblank  = INT_VBLANK_MASK(irq);
+  // Now check for and respond to various interrupts
+
+  // VBlank
+  uint8_t ie_vblank  = INT_VBLANK_MASK(ie);
+  uint8_t irq_vblank = INT_VBLANK_MASK(irq);
   if (ie_vblank & irq_vblank) {
     Push16Bit(pc);
     pc = ISR_ADDR_VBLANK;
@@ -241,6 +244,7 @@ uint8_t Cpu::handleInterrupt() {
     return true;
   }
 
+  // STAT
   uint8_t ie_stat  = INT_STAT_MASK(ie);
   uint8_t irq_stat = INT_STAT_MASK(irq);
   if (ie_stat & irq_stat) {
@@ -251,6 +255,7 @@ uint8_t Cpu::handleInterrupt() {
     return true;
   }
 
+  // Timer
   uint8_t ie_timer  = INT_TIMER_MASK(ie);
   uint8_t irq_timer = INT_TIMER_MASK(irq);
   if (ie_timer & irq_timer) {
@@ -261,6 +266,7 @@ uint8_t Cpu::handleInterrupt() {
     return true;
   }
 
+  // Serial
   uint8_t ie_serial  = INT_SERIAL_MASK(ie); 
   uint8_t irq_serial = INT_SERIAL_MASK(irq);
   if (ie_serial & irq_serial) {
@@ -271,6 +277,7 @@ uint8_t Cpu::handleInterrupt() {
     return true;
   }
 
+  // Joypad
   uint8_t ie_joypad  = INT_JOYPAD_MASK(ie);
   uint8_t irq_joypad = INT_JOYPAD_MASK(irq);
   if (ie_joypad & irq_joypad) {

@@ -63,14 +63,14 @@ int main( int argc, char* argv[] )
       debug->RegdumpGBDoc();
       break;
     }
-      
+
     // Run PPU
-    // uint8_t cycles_elapsed = cpu->get_last_cycles();
-    // bool ppu_exec_result = ppu->Execute(cycles_elapsed);
-    // if (ppu_exec_result == FAILURE) {
-    //   std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error: exiting" << std::endl;
-    //   break;
-    // }
+    uint8_t cycles_elapsed = cpu->get_last_cycles();
+    bool ppu_exec_result = ppu->Execute(cycles_elapsed);
+    if (ppu_exec_result == FAILURE) {
+      std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error: exiting" << std::endl;
+      break;
+    }
 
     // Read serial output from Blargg's test roms
     if (!cpu->gbdoc) {

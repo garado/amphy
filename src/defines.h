@@ -25,8 +25,21 @@ typedef struct Color {
 #define TIMA 0xFF05 // TIMA: Timer value
 #define TMA  0xFF06 // TMA: Timer reload/modulo
 #define TAC  0xFF07 // TAC: Timer control
+
+/* Interrupts */
 #define INTF 0xFF0F // IF: Interrupt requests
+#define INTF_VBLANK_IRQ 0
+#define INTF_STAT_IRQ 1
+#define INTF_TMR_IRQ 2
+#define INTF_SRL_IRQ 3
+#define INTF_JOYP_IRQ 4
+
 #define INTE 0xFFFF // IE: Interrupt enable
+#define INTE_VBLANK_IE 0
+#define INTE_STAT_IE 1
+#define INTE_TMR_IE 2
+#define INTE_SRL_IE 3
+#define INTE_JOYP_IE 4
 
 #define NR10 0xFF10 // NR10: Audio channel 1 sweep
 #define NR11 0xFF11 // NR11: Audio channel 1 sound length/wave duty
@@ -57,14 +70,14 @@ typedef struct Color {
 // FF30 – $FF3F: Wave pattern
 
 #define LCDC 0xFF40 // LCDC: LCD control
-#define LCDC_BIT_EN 7
-#define LCDC_BIT_WIN_ADDR 6
-#define LCDC_BIT_WIN_EN 5
-#define LCDC_BIT_BGW_TD 4 // which addressing mode
-#define LCDC_BIT_BG_ADDR 3 // which tile map
-#define LCDC_BIT_OBJ_SIZE 2
-#define LCDC_BIT_OBJ_EN 1
-#define LCDC_BIT_BG_EN 0
+#define LCDC_EN 7
+#define LCDC_WIN_TMAP 6
+#define LCDC_WIN_EN 5
+#define LCDC_BGW_ADDR_MODE 4
+#define LCDC_BG_TMAP 3
+#define LCDC_OBJ_SIZE 2
+#define LCDC_OBJ_EN 1
+#define LCDC_BG_EN 0
 
 
 /* FF41 STAT
@@ -75,15 +88,11 @@ typedef struct Color {
  * 2: LY == LYC flag 
  * 1-0: Mode numbers (show current state of PPU) */
 #define STAT 0xFF41
-#define STAT_BIT_LYC 6
-#define STAT_BIT_OAM 5 
-#define STAT_BIT_VBLANK 4
-#define STAT_BIT_HBLANK 3
-#define STAT_BIT_LYC_FLAG 2 
-#define STAT_MASK_LYC (unsigned 1 << STAT_BIT_LYC)
-#define STAT_MASK_OAM (unsigned 1 << STAT_BIT_OAM)
-#define STAT_MASK_VBLANK (unsigned 1 << STAT_BIT_VBLANK)
-#define STAT_MASK_HBLANK (unsigned 1 << STAT_BIT_HBLANK)
+#define STAT_LYC_INTR_EN 6
+#define STAT_OAM_INTR_EN 5
+#define STAT_VBLANK_INTR_EN 4
+#define STAT_HBLANK_INTR_EN 3
+#define STAT_LYC_FLAG 2 
 
 #define SCY  0xFF42 // SCY: Background vert. scroll
 #define SCX  0xFF43 // SCX: Background horiz. scroll

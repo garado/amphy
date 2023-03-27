@@ -260,6 +260,7 @@ void Cpu::LD_BC_u16() {
   cycles_last_taken = 12;
 }
 
+/* 11: LD DE, u16 */
 void Cpu::LD_DE_u16() {
   e = bus->read(pc++); // LSB of d16
   d = bus->read(pc++); // MSB of d16

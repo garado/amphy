@@ -10,34 +10,18 @@
 #include "../bus.h"
 #include "../platform/platform.h"
 
-#define OAM_SCAN_CYCLES     40
-#define PX_TRANSFER_CYCLES  4
-
-#define HBLANK_CYCLES       4 // hblank and vblank vals need to be verified
-#define VBLANK_CYCLES       4
-
+#define VBLANK_TOTAL_CYCLES 226
 #define PX_TRANSFER_X_DURATION 240
 #define PX_TRANSFER_Y_DURATION 160
-
 #define HBLANK_X_DURATION   68
 #define VBLANK_Y_DURATION   68
-
 #define OAM_BYTES   40
 
 #define NO_TRANSITION 0
 
-typedef enum OAM_Flags {
-  CGB_PALETTE_NUM0,
-  CGB_PALETTE_NUM1,
-  CGB_PALETTE_NUM2,
-  TILE_VRAM_BANK,
-  PALETTE_NUM,
-  X_FLIP,
-  Y_FLIP,
-  BG_OVER_OBJ,
-} OAM_Flags;
-
+/* This mode numbering MUST be followed */
 typedef enum PpuStates {
+  // 0 means no_transition/invalid
   HBLANK = 1,
   VBLANK,
   OAM_SCAN,
@@ -45,77 +29,49 @@ typedef enum PpuStates {
 } PpuStates;
 
 static const char* PpuStates_Str[] {
-  "NO_TRANSITION"
+  "NO_TRANSITION",
   "OAM_SCAN",
   "PIXEL_TRANSFER",
   "HBLANK",
   "VBLANK",
 };
 
-typedef enum PixelFetcherStates {
-  GET_TILE = 1,
-  GET_TILE_LOW,
-  GET_TILE_HIGH,
-  PUSH,
-  IDLE,
-} PixelFetcherStates;
-
-static const char* PixelFetcherStates_Str[] {
-  "NO_TRANSITION",
-  "GET_TILE",
-  "GET_TILE_LOW",
-  "GET_TILE_HIGH",
-  "PUSH",
-  "IDLE",
+static const uint8_t PPU_STATE_CYCLES[5] = {
+  0,  // INVALID
+  40, // OAM
+  4,  // HBlank
+  4,  // VBlank
+  4,  // PxTransfer
 };
-
-// $FF41 STAT: LCD status
-typedef enum StatBits {
-  MODE_BIT0, // 0 = hblank, 1 = vblank
-  MODE_BIT1, // 2 = oam, 3 = px transfer
-  LYC_EQ_LY, // 0 == different, 1 == equal
-  HBLANK_INT,
-  VBLANK_INT,
-  OAM_INT,
-  LYC_LY_INT, // LYC = LY interrupt
-} StatBits;
 
 class Ppu
 {
   private:
     Bus*    bus;
     Display* disp;
-    //uint8_t Ppu_State = OAM_SCAN;
-    uint8_t Ppu_State = VBLANK; // blargg test rom init
+    uint8_t Ppu_State = VBLANK; // not sure what it actually starts in
 
     // Cycles since the last time the PPU actually ran.
-    int cycles_since_last_exec = 0;
+    int cyclesSinceLastExec = 0;
     
     // x coord for pixel transfer
     uint16_t x = 0;
 
-    std::vector<uint8_t> oam;
-
-    std::vector<uint8_t> oam_fifo;
-    std::vector<uint8_t> bg_fifo;
-
-    void OAMScan(void);
-    void PixelTransfer(void);
-    void HBlank(void);
-    void VBlank(void);
-    void UpdateCycles(uint16_t cycles_taken);
-    bool CanExecute(void);
-
     static Color gb_colors[4];
 
+    // PPU state machine
+    void OAMScan(uint8_t *nextState);
+    void PixelTransfer(uint8_t *nextState);
+    void HBlank(uint8_t *nextState);
+    void VBlank(uint8_t *nextState);
+
+    // Helpers
+    void UpdateCycles(uint8_t state);
     bool UseUnsignedAddressing(void);
 
   public:
-    void calcTimeToNextInterrupt();
-    uint16_t timeToNextInterrupt = 0;
-
     bool Execute(uint8_t cpu_cycles_elapsed);
-    int cnt = 144;
+    int cnt = 144; // ???
 
     // Constructor & destructor
     Ppu(Bus* bus_, Display* disp_) {

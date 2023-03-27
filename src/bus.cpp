@@ -80,7 +80,7 @@ uint8_t Bus::read(uint16_t address) const {
   } else if (address < INVALID_START) {
     return oam.at(address - OAM_START);
   } else if (address < IO_START) {
-    std::cout << "INVALID MEMORY REGION READ" << std::endl;
+    printf("INVALID MEMORY REGION READ: 0x%4x\n", address);
   } else if (address < HRAM_START) {
     return io_reg.at(address - IO_START);
   } else if (address < 0xFFFF) {
@@ -125,7 +125,7 @@ void Bus::write(uint16_t address, uint8_t val) {
   } else if (address < INVALID_START) {
     oam.at(address - OAM_START) = val;
   } else if (address < IO_START) {
-    std::cout << "INVALID MEMORY REGION READ" << std::endl;
+    printf("INVALID MEMORY REGION WRITE: 0x%2.0x to 0x%4.0x\n", val, address);
   } else if (address < HRAM_START) {
     io_reg.at(address - IO_START) = val;
   } else if (address < 0xFFFF) {
