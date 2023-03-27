@@ -1,6 +1,6 @@
 #OBJS specifies which files to compile as part of the project
 #OBJS = src/bus.cpp src/ppu.cpp src/main.cpp src/win.cpp src/cpu/cpu.cpp src/cpu/op*.cpp src/debug
-OBJS = src/*.cpp src/cpu/*.cpp src/utils/*.cpp src/display/*.cpp
+OBJS = src/*.cpp src/cpu/*.cpp src/ppu/*.cpp src/utils/*.cpp src/platform/linux/*.cpp
 
 #CC specifies which compiler we're using
 CC = g++

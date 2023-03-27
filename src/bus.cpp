@@ -15,6 +15,8 @@
 
 #define CART_TYPE 0x147
 
+bool testflag;
+
 // Enum of different Gameboy cartridge types
 typedef enum CartType { 
   ROM,
@@ -48,6 +50,7 @@ typedef enum CartType {
 void Bus::init() {
   allow_div = true;
   write(DIV, 0x1E);
+  write(LCDC, 0x91); //??
   allow_div = false;
 }
 
@@ -56,9 +59,9 @@ void Bus::init() {
  * @param address The address to read from */
 uint8_t Bus::read(uint16_t address) const {
   // Temporary for GBDoc
-  if (address == 0xFF44) {
-    return 0x90;
-  }
+  // if (address == 0xFF44) {
+  //   return 0x90;
+  // }
 
   if (address < ROM1_START) {
     return rom_00.at(address);
@@ -99,6 +102,11 @@ void Bus::write(uint16_t address, uint8_t val) {
 
   // Upper 5 TAC bits are pulled up to 1
   if (address == TAC) val |= 0b11111000;
+
+  // if (address == SCY) {
+  //   testflag = true;
+  //   printf("writing to scy: %x\n", val);
+  // }
 
   if (address < ROM1_START) {
     rom_00.at(address) = val;
@@ -198,4 +206,23 @@ uint8_t * Bus::GetAddressPointer(uint16_t address)
     return &int_enable;
   }
   return &(*it);
+}
+
+uint8_t const Bus::BitTest(uint16_t address, uint8_t bitpos)
+{
+  return (read(address) & bitpos) >> bitpos;
+}
+
+void Bus::BitSet(uint16_t address, uint8_t bitpos)
+{
+  uint8_t data = read(address);
+  data |= (1 << bitpos);
+  write(address, data);
+}
+
+void Bus::BitClear(uint16_t address, uint8_t bitpos)
+{
+  uint8_t mask = ~(1 << bitpos);
+  uint8_t data = read(address) & mask;
+  write(address, data);
 }

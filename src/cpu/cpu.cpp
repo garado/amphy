@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "cpu.h"
-#include "../ppu.h"
+#include "../ppu/ppu.h"
 #include "../utils/debug.h"
 #include "../defines.h"
 

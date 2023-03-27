@@ -5,6 +5,15 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#include <stdint.h>
+
+typedef struct Color {
+  uint16_t r;
+  uint16_t g; 
+  uint16_t b;
+  uint16_t a;
+} Color;
+
 #define FAILURE 1
 #define SUCCESS 0
 
@@ -48,7 +57,34 @@
 // FF30 – $FF3F: Wave pattern
 
 #define LCDC 0xFF40 // LCDC: LCD control
-#define STAT 0xFF41 // STAT: LCD status
+#define LCDC_BIT_EN 7
+#define LCDC_BIT_WIN_ADDR 6
+#define LCDC_BIT_WIN_EN 5
+#define LCDC_BIT_BGW_TD 4 // which addressing mode
+#define LCDC_BIT_BG_ADDR 3 // which tile map
+#define LCDC_BIT_OBJ_SIZE 2
+#define LCDC_BIT_OBJ_EN 1
+#define LCDC_BIT_BG_EN 0
+
+
+/* FF41 STAT
+ * 6: LYC int enable
+ * 5: OAM int enable
+ * 4: VBLANK int enable
+ * 3: HBLANK int enable 
+ * 2: LY == LYC flag 
+ * 1-0: Mode numbers (show current state of PPU) */
+#define STAT 0xFF41
+#define STAT_BIT_LYC 6
+#define STAT_BIT_OAM 5 
+#define STAT_BIT_VBLANK 4
+#define STAT_BIT_HBLANK 3
+#define STAT_BIT_LYC_FLAG 2 
+#define STAT_MASK_LYC (unsigned 1 << STAT_BIT_LYC)
+#define STAT_MASK_OAM (unsigned 1 << STAT_BIT_OAM)
+#define STAT_MASK_VBLANK (unsigned 1 << STAT_BIT_VBLANK)
+#define STAT_MASK_HBLANK (unsigned 1 << STAT_BIT_HBLANK)
+
 #define SCY  0xFF42 // SCY: Background vert. scroll
 #define SCX  0xFF43 // SCX: Background horiz. scroll
 #define LY   0xFF44 // LY: LCD Y coordinate
@@ -61,5 +97,11 @@
 #define WX   0xFF4B // WX: Window X coord
 #define BOOT 0xFF50 // Boot ROM control
 
+// Colors
+typedef struct color {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+} color;
 
 #endif

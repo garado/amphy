@@ -8,7 +8,7 @@
 
 #include "debug.h"
 #include "../cpu/cpu.h"
-#include "../ppu.h"
+#include "../ppu/ppu.h"
 #include "../bus.h"
 
 void Debugger::FetchState() {

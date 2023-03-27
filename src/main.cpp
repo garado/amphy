@@ -1,12 +1,15 @@
+
 #include <stdio.h>
 #include <iostream>
 #include <iomanip>
-#include <unistd.h>
 
+// Display and input stuff
+#include "platform/platform.h"
+
+#include "ppu/ppu.h"
 #include "cpu/cpu.h"
 #include "utils/debug.h"
-#include "ppu.h"
-#include "display/gba-sdl.h"
+#include "utils/utils.h"
 #include "bus.h"
 #include "defines.h"
 
@@ -23,21 +26,7 @@ int main( int argc, char* argv[] )
   cpu->debugger = debug;
   debug->cpu = cpu;
 
-  // Parse flags
-  // -g gbdoc mode
-  // -d debug mode (step)
-  int c;
-  while ((c = getopt(argc, argv, ":gd")) != -1) {
-    switch (c) {
-      case 'g':
-        cpu->gbdoc = true;
-        break;
-      case 'd':
-        cpu->debug = true;
-      default:
-        break;
-    }
-  }
+  ParseFlags(argc, argv, cpu);
 
   // Read ROM (default to test rom if nothing was given)
   bool bus_status;
@@ -58,21 +47,14 @@ int main( int argc, char* argv[] )
   bus->write(STAT, 0x81);
   bus->init();
 
-  // Start SDL and create new window
-  if (disp->init() == EXIT_FAILURE) {
-    std::cerr << "SDL: Failed to initialize" << std::endl;
-  } else {
-    // Load media
-    if( disp->LoadMedia() == EXIT_FAILURE ) {
-      std::cerr << "SDL: Failed to load media" << std::endl;
-      disp->close();
-    } else {
-      disp->ApplyImg();
-    }
-  }
+  disp->Init();
 
   // Main loop
-  for (;;) {
+  while (!disp->amphy_quit) {
+
+    // Handle events
+    disp->HandleEvent();
+
     // Run CPU
     try {
       cpu->execute();
@@ -83,12 +65,12 @@ int main( int argc, char* argv[] )
     }
       
     // Run PPU
-    uint8_t cycles_elapsed = cpu->get_last_cycles();
-    bool ppu_exec_result = ppu->Execute(cycles_elapsed);
-    if (ppu_exec_result == FAILURE) {
-      std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error: exiting" << std::endl;
-      break;
-    }
+    // uint8_t cycles_elapsed = cpu->get_last_cycles();
+    // bool ppu_exec_result = ppu->Execute(cycles_elapsed);
+    // if (ppu_exec_result == FAILURE) {
+    //   std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error: exiting" << std::endl;
+    //   break;
+    // }
 
     // Read serial output from Blargg's test roms
     if (!cpu->gbdoc) {
@@ -98,6 +80,7 @@ int main( int argc, char* argv[] )
         bus->write(0xFF02, 0);
       }
     }
+
   }
 
   // Free resources and close SDL
@@ -106,7 +89,7 @@ int main( int argc, char* argv[] )
   delete(debug);
   delete(ppu);
 
-  // win->close();
+  disp->Close();
 
   return EXIT_SUCCESS;
 }

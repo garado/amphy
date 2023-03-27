@@ -66,6 +66,10 @@ class Bus
     void    write(uint16_t address, uint8_t val);
     uint8_t  CopyRom(std::string fname);
     uint8_t * GetAddressPointer(uint16_t address);
+
+    uint8_t const BitTest(uint16_t address, uint8_t bit);
+    void BitSet(uint16_t address, uint8_t bit);
+    void BitClear(uint16_t address, uint8_t bit);
 };
 
 #endif
