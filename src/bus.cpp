@@ -59,9 +59,9 @@ void Bus::init() {
  * @param address The address to read from */
 uint8_t Bus::read(uint16_t address) const {
   // Temporary for GBDoc
-  // if (address == 0xFF44) {
-  //   return 0x90;
-  // }
+  if (address == 0xFF44) {
+    return 0x90;
+  }
 
   if (address < ROM1_START) {
     return rom_00.at(address);

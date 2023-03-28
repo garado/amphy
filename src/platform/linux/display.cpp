@@ -5,7 +5,7 @@
 #include <fstream>
 
 #include "display.h"
-#include "../../ppu/ppu.h"
+#include "../../ppu.h"
 #include "../../defines.h"
 
 /* @Function Display::init()
@@ -29,6 +29,8 @@ bool Display::Init() {
     printf("SDL could not initialize! SDL_Error: %s", SDL_GetError()),
     status = EXIT_FAILURE;
   }
+
+  SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
   if ( status == EXIT_SUCCESS ) {
     LoadSplash();

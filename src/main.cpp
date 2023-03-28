@@ -6,7 +6,7 @@
 // Display and input stuff
 #include "platform/platform.h"
 
-#include "ppu/ppu.h"
+#include "ppu.h"
 #include "cpu/cpu.h"
 #include "utils/debug.h"
 #include "utils/utils.h"

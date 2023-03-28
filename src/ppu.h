@@ -6,9 +6,9 @@
 #define PPU_H
 
 #include <SDL2/SDL.h>
-#include "../cpu/cpu.h"
-#include "../bus.h"
-#include "../platform/platform.h"
+#include "cpu/cpu.h"
+#include "bus.h"
+#include "platform/platform.h"
 
 #define VBLANK_TOTAL_CYCLES 226
 #define PX_TRANSFER_X_DURATION 240
@@ -64,6 +64,10 @@ class Ppu
     void PixelTransfer(uint8_t *nextState);
     void HBlank(uint8_t *nextState);
     void VBlank(uint8_t *nextState);
+
+    void Px_RenderBackground(void);
+    void Px_Window(void);
+    void Px_Sprite(void);
 
     // Helpers
     void UpdateCycles(uint8_t state);

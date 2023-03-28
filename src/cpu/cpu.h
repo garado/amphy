@@ -52,7 +52,7 @@ class Cpu
 {
   private:
     // Internal registers
-    uint16_t sysclk = 0x1EF0;
+    uint16_t sysclk = 0x1E;
 
     uint8_t a = 0x01; // gbdoc init
     uint8_t f = 0xB0;

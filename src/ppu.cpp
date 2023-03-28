@@ -3,9 +3,9 @@
 /* █▄█ █▀▄ █▀█ █▀▀ █▀█ █ █▄▄ ▄█ */
 
 #include "ppu.h"
-#include "../bus.h"
-#include "../platform/platform.h"
-#include "../defines.h"
+#include "bus.h"
+#include "platform/platform.h"
+#include "defines.h"
 #include <cstdio>
 
 /*                  240                       68
@@ -119,9 +119,31 @@ void Ppu::OAMScan(uint8_t *nextState)
 }
 
 /* Ppu::PixelTransfer()
- * Draw pixels to the screen.
- * Each pixel takes 4 cycles to draw. */
+ * Draw pixels to the screen. This function handles
+ * drawing all layers. Each pixel takes 4 cycles to draw. */
 void Ppu::PixelTransfer(uint8_t *nextState)
+{
+  Px_RenderBackground();
+
+  // Check if BG enabled
+  // if (!bus->BitTest(LCDC, LCDC_BG_EN)) {
+  //   disp->DrawPixel(x, bus->read(LY), &color_0);
+  //   ++x;
+  //   if (x >= PX_TRANSFER_X_DURATION) {
+  //     *nextState = HBLANK;
+  //   }
+  //   return;
+  // }
+
+  ++x;
+  if (x >= PX_TRANSFER_X_DURATION) {
+    *nextState = HBLANK;
+  }
+}
+
+/* @Function Ppu::Px_RenderBackground
+ * @brief Render a background pixel */
+void Ppu::Px_RenderBackground(void)
 {
   uint8_t ly = bus->read(LY);
 
@@ -143,11 +165,6 @@ void Ppu::PixelTransfer(uint8_t *nextState)
   // printf("    Tilemap x, y: %d %d\n", tilemap_x, tilemap_y);
   // printf("    Tilemap addr: 0x%x\n", tilemap_addr);
 
-  // uint8_t tilemap_y = ((ly + bus->read(SCY)) / 8) & 0xFF;
-  // uint8_t tilemap_x = ((bus->read(SCX) + x) / 8) & 0x1F;
-  // uint16_t tilemap_offset = (tilemap_y * 32) + tilemap_x;
-  // uint16_t tilemap_addr = tilemap_base + tilemap_offset;
-
   // Read tile data using tile index
   uint16_t tiledata_address, tiledata_base;
   if (UseUnsignedAddressing()) {
@@ -163,8 +180,8 @@ void Ppu::PixelTransfer(uint8_t *nextState)
   // printf("    Tiledata base: 0x%x\n", tiledata_base);
   // printf("    Tiledata addr: 0x%x\n", tiledata_address);
 
-  uint8_t bitpos = (bus->read(SCX) + x) % 8;
-  uint8_t tile_y = (bus->read(SCY) + ly) % 8;
+  uint8_t bitpos = 7 - ((bus->read(SCX) + x) % 8);
+  uint8_t tile_y = ((bus->read(SCY) + ly) % 8);
   tiledata_address += (tile_y * 2);
   // printf("    Tile x y: %d %d\n", bitpos, tile_y);
 
@@ -174,12 +191,18 @@ void Ppu::PixelTransfer(uint8_t *nextState)
 
   Color color = gb_colors[id];
 
+  //disp->Render()
   disp->DrawPixel(x, bus->read(LY), &color);
+}
 
-  ++x;
-  if (x >= PX_TRANSFER_X_DURATION) {
-    *nextState = HBLANK;
-  }
+void Ppu::Px_Window(void)
+{
+
+}
+
+void Ppu::Px_Sprite(void)
+{
+
 }
 
 /* Ppu::HBlank */
