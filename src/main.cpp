@@ -3,28 +3,32 @@
 #include <iostream>
 #include <iomanip>
 
-// Display and input stuff
+#include "common.h"
 #include "platform/platform.h"
-
-#include "ppu.h"
-#include "cpu/cpu.h"
-#include "utils/debug.h"
-#include "utils/utils.h"
+#include "cpu.h"
 #include "bus.h"
-#include "defines.h"
+#include "ppu.h"
+#include "utils.h"
+#include "debug.h"
 
 int main( int argc, char* argv[] )
 {
   Cpu* cpu;
-  Debugger* debug;
-  
-  Display* disp = new Display;
-  Bus* bus = new Bus;
-  Ppu* ppu = new Ppu(bus, disp);
-  cpu   = new Cpu(bus, debug, ppu);
-  debug = new Debugger(cpu, bus, ppu);
-  cpu->debugger = debug;
-  debug->cpu = cpu;
+  Bus* bus;
+  Ppu* ppu;
+  Display* disp;
+  Debugger* debugger;
+
+  disp = new Display;
+  bus = new Bus;
+  ppu = new Ppu(bus, disp);
+  cpu = new Cpu(bus, ppu, debugger);
+  debugger = new Debugger(cpu, bus, ppu);
+
+  cpu->bus = bus;
+  cpu->debugger = debugger;
+  cpu->ppu = ppu;
+  cpu->bus = bus;
 
   ParseFlags(argc, argv, cpu);
 
@@ -43,53 +47,40 @@ int main( int argc, char* argv[] )
   }
 
   // ly is initialized to 0x90 in blargg's tests?
-  bus->write(LY, 0x90);
-  bus->write(STAT, 0x81);
-  bus->init();
+  bus->Write(LY, 0x90);
+  bus->Write(STAT, 0x81);
+  bus->Init();
 
-  disp->Init();
-
-  // Main loop
-  while (!disp->amphy_quit) {
-
-    // Handle events
-    disp->HandleEvent();
+  while(true) {
 
     // Run CPU
     try {
-      cpu->execute();
+      cpu->Execute();
     } catch (...) {
       std::cout << __PRETTY_FUNCTION__ << ": Fatal CPU error: exiting" << std::endl;
-      debug->RegdumpGBDoc();
-      break;
+      debugger->Regdump();
+      return EXIT_FAILURE;
     }
 
-    // Run PPU
-    uint8_t cycles_elapsed = cpu->get_last_cycles();
-    bool ppu_exec_result = ppu->Execute(cycles_elapsed);
-    if (ppu_exec_result == FAILURE) {
-      std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error: exiting" << std::endl;
-      break;
-    }
-
+    // // Run PPU
+    // uint8_t cycles_elapsed = cpu->get_last_cycles();
+    // bool ppu_exec_result = ppu->Execute(cycles_elapsed);
+    // if (ppu_exec_result == FAILURE) {
+    //   std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error: exiting" << std::endl;
+    //   break;
+    // }
+    
     // Read serial output from Blargg's test roms
-    if (!cpu->gbdoc) {
-      if (bus->read(0xFF02) == 0x81) {
-        char c = bus->read(0xFF01);
-        std::cout << c << std::flush;
-        bus->write(0xFF02, 0);
-      }
+    if (bus->Read(0xFF02) == 0x81) {
+      fprintf(stderr, "%c", bus->Read(0xFF01));
+      bus->Write(0xFF02, 0);
     }
-
   }
 
   // Free resources and close SDL
   delete(cpu);
   delete(bus);
-  delete(debug);
   delete(ppu);
-
-  disp->Close();
 
   return EXIT_SUCCESS;
 }

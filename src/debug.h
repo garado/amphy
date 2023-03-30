@@ -12,29 +12,24 @@ class Cpu;
 class Bus;
 class Ppu;
 
-class Debugger
-{
+class Debugger {
   private:
-    int af, bc, de, hl;
-    int sp, pc;
-    int op;
-
-  public:
     Cpu* cpu;
     Bus* bus;
     Ppu* ppu;
+
+    int instrCount = 0;
     int stepCycles;
     int pcBreakpoint;
     int memBreakpoint;
     bool ffSet, bpSet, mbpSet;
-    void FetchState();
 
   public:
+    void Help();
     void Regdump();
-    void RegdumpGBDoc();
-    void debugger();
-    void step();
-    void Stackdump(void);
+    void Step();
+
+  public:
     Debugger(Cpu* cpu_, Bus* bus_, Ppu* ppu_) {
       bus = bus_;
       cpu = cpu_;
