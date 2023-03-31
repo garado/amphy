@@ -7,18 +7,24 @@
 #define BUS_H
 
 // Starting address for different regions of memory
-#define ROM0_START    0x0000
-#define ROM1_START    0x4000
-#define VRAM_START    0x8000
-#define EXTRAM_START  0xA000
-#define WRAM0_START   0xC000
-#define WRAM0_START   0xC000
-#define WRAM1_START   0xD000
-#define ECHRAM_START  0xE000
-#define OAM_START     0xFE00
+#define ROM0_START    0x0000 // 0000-3FFF
+#define ROM1_START    0x4000 // 4000-7FFF
+#define VRAM_START    0x8000 // 8000-9FFF
+#define EXTRAM_START  0xA000 // A000-BFFF
+#define WRAM0_START   0xC000 // C000-CFFF
+#define WRAM1_START   0xD000 // D000-DFFF
+#define ECHRAM_START  0xE000 // E000-FDFF
+#define OAM_START     0xFE00 // FE00-FE9F
 #define INVALID_START 0xFEA0
-#define IO_START      0xFF00
-#define HRAM_START    0xFF80
+#define IO_START      0xFF00 // FF00-FF7F
+#define HRAM_START    0xFF80 // FF80-FFFE
+
+enum mbcModeSelect {
+  ROM_MODE,
+  RAM_MODE
+};
+
+class Cpu;
 
 class Bus
 {
@@ -59,12 +65,24 @@ class Bus
     // Interrupt enable reg
     uint8_t int_enable;
 
+  private:
+    // MBC
+    bool ramEnable = false;
+    uint8_t cartType;
+    uint8_t romBankNumber = 0;
+    uint8_t mbcMode = ROM_MODE;
+    std::string romFname;
+
   public:
+    Cpu * cpu;
+
     bool allow_div = false;
-    void init();
-    uint8_t read(uint16_t address) const;
-    void    write(uint16_t address, uint8_t val);
-    uint8_t  CopyRom(std::string fname);
+
+    void Init();
+    void Write(uint16_t address, uint8_t val);
+    void SwitchBanks(uint8_t bankNum);
+    uint8_t Read(uint16_t address) const;
+    uint8_t CopyRom(std::string fname);
     uint8_t * GetAddressPointer(uint16_t address);
 
     uint8_t const BitTest(uint16_t address, uint8_t bit);

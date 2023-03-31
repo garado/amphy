@@ -18,14 +18,19 @@ class Debugger {
     Bus* bus;
     Ppu* ppu;
 
+    int bpOp = 0;
     int instrCount = 0;
     int stepCycles;
     int pcBreakpoint;
     int memBreakpoint;
-    bool ffSet, bpSet, mbpSet;
+    bool ffSet, bpSet, bpOpSet;
+
+  private:
+    void Help();
+    void PrintCpuState();
+    void PrintPpuState();
 
   public:
-    void Help();
     void Regdump();
     void Step();
 

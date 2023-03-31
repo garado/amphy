@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
-#include "../../defines.h"
+#include "../../common.h"
 
 // Size of SDL screen
 #define GAMEBOY_WIDTH 160

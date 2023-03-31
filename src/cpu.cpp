@@ -15,25 +15,22 @@ void Cpu::Execute() {
       RunInstruction();
       break;
 
-    case CPU_PRE_EI:
-      cpuState = CPU_TRIGGER_EI;
+    case CPU_EI:
       RunInstruction();
-      break;
-
-    case CPU_TRIGGER_EI:
       ime = true;
-      RunInstruction();
-      cpuState = CPU_NORMAL;
+      if (cpuState == CPU_EI) {
+        cpuState = CPU_NORMAL;
+      }
       break;
 
     case CPU_HALT_IME_SET:
-      RunTimer(ALU_CYCLES);
-      if (gbdoc) debugger->Regdump();
+      if (gbdoc || step) debugger->Regdump();
+      Tick(NOP_CYCLES);
       break;
 
     case CPU_HALT_IME_NOT_SET:
-      RunTimer(ALU_CYCLES);
-      if (gbdoc) debugger->Regdump();
+      Tick(NOP_CYCLES);
+      if (gbdoc || step) debugger->Regdump();
       break;
 
     // Byte after halt is read twice
@@ -42,17 +39,19 @@ void Cpu::Execute() {
       cpuState = CPU_NORMAL;
       break;
 
+    case CPU_STOP:
+      break;
+
     default: break;
   }
 }
 
 /* @Function Cpu::RunInstruction */
 void Cpu::RunInstruction() {
-  if (step) debugger->Step();
-  if (gbdoc) debugger->Regdump();
-
   // Halt bug: Instruction after HALT is read twice
   if (cpuState == CPU_HALT_BUG) {
+    if (step) debugger->Step();
+    if (gbdoc) debugger->Regdump();
     op = MemReadRaw(pc);
     if (op == 0xCB) {
       Decode16BitOpcode();
@@ -60,6 +59,9 @@ void Cpu::RunInstruction() {
       Decode8BitOpcode();
     }
   } else {
+    op = MemReadRaw(pc);
+    if (step) debugger->Step();
+    if (gbdoc) debugger->Regdump();
     op = MemRead_u8(&pc);
     if (op == 0xCB) {
       Decode16BitOpcode();
@@ -121,16 +123,19 @@ uint8_t Cpu::MemReadRaw(Address addr)
 
 uint8_t Cpu::MemRead_u8(Address * addr)
 {
+  uint8_t val = MemReadRaw((*addr)++);
   Tick(MEM_RW_CYCLES);
-  return MemReadRaw((*addr)++);
+  return val;
 }
 
 uint16_t Cpu::MemRead_u16(Address * addr)
 {
+  // uint8_t lsb = MemReadRaw((*addr)++);
+  // Tick(MEM_RW_CYCLES);
+  // uint8_t msb = MemReadRaw((*addr)++);
+  // Tick(MEM_RW_CYCLES);
   uint8_t lsb = MemReadRaw((*addr)++);
-  Tick(MEM_RW_CYCLES);
   uint8_t msb = MemReadRaw((*addr)++);
-  Tick(MEM_RW_CYCLES);
   return (msb << 8) | lsb;
 }
 
@@ -141,16 +146,14 @@ void Cpu::MemWriteRaw(Address addr, uint8_t value)
 
 void Cpu::MemWrite_u8(Address * addr, uint8_t value)
 {
-  Tick(MEM_RW_CYCLES);
   MemWriteRaw((*addr)++, value);
+  Tick(MEM_RW_CYCLES);
 }
 
 void Cpu::MemWrite_u16(Address * addr, uint16_t value)
 {
-  Tick(MEM_RW_CYCLES);
-  MemWriteRaw((*addr)++, value & 0xFF);
-  Tick(MEM_RW_CYCLES);
-  MemWriteRaw((*addr)++, value >> 8);
+  MemWrite_u8(addr, value & 0xFF);
+  MemWrite_u8(addr, value >> 8);
 }
 
 void Cpu::Push_u8(uint8_t value)
@@ -367,9 +370,9 @@ void Cpu::Decode8BitOpcode()
         case 3:
           JP_cc_d16(DT_cc[y], y & 0x1);
           break;
-        case 4: LD_A_atC();   break;
+        case 4: LD_atC_A();   break;
         case 5: LD_a16_A(); break;
-        case 6: LD_atC_A();   break;
+        case 6: LD_A_atC();   break;
         case 7: LD_A_a16(); break;
         default: break;
       }
@@ -430,7 +433,7 @@ void Cpu::HandleInterrupt()
 {
   uint8_t ie = MemReadRaw(INTE);
   uint8_t irq = MemReadRaw(INTF);
-
+  
   uint8_t intrPending = ie & irq;
 
   // Do nothing if no interrupts pending
@@ -449,14 +452,11 @@ void Cpu::HandleInterrupt()
 
   if (!ime) return;
 
-  // printf("checking for interrupts\n");
   for (uint8_t i = 0; i < INTR_TYPES; ++i) {
-    // printf("\tchecking intr %d\n", i);
     uint8_t ieCurr  = (1 << Intr_Bits[i]) & ie;
     uint8_t irqCurr = (1 << Intr_Bits[i]) & irq;
 
     if (ieCurr & irqCurr) {
-      // printf("\tdetected: %d\n", i);
       Push_u16(pc);
       pc = Intr_Addr[i];
       prevIme = ime;
@@ -469,9 +469,10 @@ void Cpu::HandleInterrupt()
 /* @Function Cpu::RunTimer
  * @brief Ticks system clock and requests timer interrupt when
  * necessary.
- *    Generally this is called within the Tick() function (which
+ *
+ * Generally this is called within the Tick() function (which
  * is then called when there is an instruction with a memory
- * read/write or alu op) but when cpu is halted, this is called
+ * read/write or alu op). when cpu is halted, this is called
  * manually. */
 void Cpu::RunTimer(uint8_t cycles)
 {
@@ -483,7 +484,7 @@ void Cpu::RunTimer(uint8_t cycles)
   bus->allow_div = false;
 
   // TIMA is incremented at the frequency specified by TAC.
-  // When the value overflows (> 0xFF), it is reset to the value
+  // When the value > 0xFF (overflows), it is reset to the value
   // specified in TMA and an interrupt is requested.
   uint8_t tac = bus->Read(TAC);
 

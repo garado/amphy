@@ -6,7 +6,7 @@
 
 #include "display.h"
 #include "../../ppu.h"
-#include "../../defines.h"
+#include "../../common.h"
 
 /* @Function Display::init()
  * @brief Initialize SDL window. */
@@ -81,8 +81,8 @@ void Display::ApplyImg() {
   // Update the surface
   SDL_UpdateWindowSurface(gWindow);
 
-  // Wait two seconds
-  SDL_Delay(2000);
+  // Wait
+  SDL_Delay(500);
 }
 
 /* @Function Display::RenderPixel()

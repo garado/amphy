@@ -14,9 +14,11 @@
 void Debugger::Help() {
   printf("=== AMPHY DEBUGGER ===\n" \
       "Options: \n" \
-      "   bp <n>    Set breakpoint at instruction address n\n" \
-      "   ff <n>    Fast-forward n cycles\n" \
-      "   mv <n>    View memory at address n\n" \
+      "   bp <n>        Set breakpoint at instruction address n\n" \
+      "   bpop <n>      Set breakpoint at opcode n (16bit ops not supported)\n" \
+      "   ff <n>        Fast-forward n cycles\n" \
+      "   mv <n>        View memory at address n\n" \
+      "   s <cpu|ppu>   View cpu/ppu state information\n"
       );
 }
 
@@ -66,6 +68,14 @@ void Debugger::Regdump() {
 void Debugger::Step() {
   instrCount++;
 
+  if (bpOpSet) {
+    if (cpu->op == bpOp) {
+      bpOpSet = false;
+    } else {
+      return;
+    }
+  }
+
   if (ffSet) {
     --stepCycles;
     if (stepCycles == 0) {
@@ -90,15 +100,15 @@ void Debugger::Step() {
   while (!stepSuccess) {
     // Get input
     std::string inputStream;
-    std::string cmd, numStr;
+    std::string cmd, arg1;
     getline(std::cin, inputStream);
     cmd = inputStream.substr(0, inputStream.find(" "));
     int pos1 = inputStream.find(" ") + 1;
     int pos2 = inputStream.find(" ", pos1);
-    numStr = inputStream.substr(pos1, pos2 - pos1);
+    arg1 = inputStream.substr(pos1, pos2 - pos1);
 
     // Nothing entered: just step 1 instruction
-    if (cmd == "" && numStr == "") {
+    if (cmd == "" && arg1 == "") {
       break;
     }
 
@@ -106,10 +116,19 @@ void Debugger::Step() {
       Help();
       continue;
     }
+
+    if (cmd == "state") {
+      if (arg1 == "cpu") {
+        PrintCpuState();
+      } else if (arg1 == "ppu") {
+        PrintPpuState();
+      }
+      continue;
+    }
     
     unsigned int num;
     try {
-      num = std::stoul(numStr, nullptr, 16);
+      num = std::stoul(arg1, nullptr, 16);
     } catch (std::exception& e) {
       std::cout << "Debugger::step(): Invalid input (non-integer string)" << std::endl;
       continue;
@@ -133,6 +152,13 @@ void Debugger::Step() {
       continue;
     }
 
+    else if (cmd == "bpop") {
+      printf("Setting breakpoint at opcode %02X (%s)\n",
+          num, cpu->opcode_8bit_names[num]);
+      bpOp = num;
+      bpOpSet = true;
+    }
+
     else {
       printf("Debugger::Step(): Invalid command ('h' to show commands)\n");
       continue;
@@ -140,4 +166,31 @@ void Debugger::Step() {
 
     stepSuccess = true;
   }
+}
+
+void Debugger::PrintCpuState() {
+  printf("=== CPU STATE ===\n" \
+      "State: %s\n" \
+      "IME: %s\n"   \
+      "IE: %02X%s%s%s%s%s \n"  \
+      "IF: %02X%s%s%s%s%s \n", \
+      Cpu_StatesStr[cpu->cpuState],
+      (cpu->ime) ? "enabled" : "disabled",
+      bus->Read(INTE),
+      bus->BitTest(INTE, 0) ? " VBLANK" : "",
+      bus->BitTest(INTE, 1) ? " STAT" : "",
+      bus->BitTest(INTE, 2) ? " TMR" : "",
+      bus->BitTest(INTE, 3) ? " SRL" : "",
+      bus->BitTest(INTE, 4) ? " JOYP" : "",
+      bus->Read(INTF),
+      bus->BitTest(INTF, 0) ? " VBLANK" : "",
+      bus->BitTest(INTF, 1) ? " STAT" : "",
+      bus->BitTest(INTF, 2) ? " TMR" : "",
+      bus->BitTest(INTF, 3) ? " SRL" : "",
+      bus->BitTest(INTF, 4) ? " JOYP" : ""
+      );
+}
+
+void Debugger::PrintPpuState() {
+  printf("Not implemented yet\n");
 }

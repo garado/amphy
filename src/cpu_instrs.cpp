@@ -12,10 +12,20 @@ void Cpu::LD_atNN_SP() {
   MemWrite_u16(&addr, sp);
 }
 
-/* TODO 10: STOP
- * Halt CPU and LCD until button pressed. */
+/* 10: STOP
+ * Halt CPU and LCD until button pressed.
+ * Follows Pandocs STOP flowchart */
 void Cpu::STOP() {
-  printf("STOP: Not implemented yet!");
+  uint8_t ie = MemReadRaw(INTE);
+  uint8_t irq = MemReadRaw(INTF);
+  uint8_t intrPending = ie & irq;
+
+  bus->Write(DIV, 0);
+  cpuState = CPU_STOP;
+
+  if (!intrPending) {
+    ++pc;
+  }
 }
 
 /* 18: JR s8 */
@@ -362,6 +372,15 @@ void Cpu::LD_r1_r2(Register * x, Register * y) {
 /* 76: HALT */
 void Cpu::HALT() {
   prevIntrState = MemReadRaw(INTE) & MemReadRaw(INTF);
+
+  // When EI is followed immediately by HALT and interrupt is
+  // pending as HALT is executed, the interrupt is serviced
+  // but the interrupt returns to HALT
+  if (prevIntrState && cpuState == CPU_EI) {
+    --pc;
+    return;
+  }
+  
   if (ime) {
     cpuState = CPU_HALT_IME_SET;
   } else {
@@ -596,7 +615,9 @@ void Cpu::JP_nn() {
 
 /* FB: EI */
 void Cpu::EI() {
-  cpuState = CPU_PRE_EI;
+  if (cpuState != CPU_EI) {
+    cpuState = CPU_EI;
+  }
 }
 
 /* F3: DI */

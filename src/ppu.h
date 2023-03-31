@@ -6,8 +6,8 @@
 #define PPU_H
 
 #include <SDL2/SDL.h>
-#include "cpu/cpu.h"
 #include "bus.h"
+#include "cpu.h"
 #include "platform/platform.h"
 
 #define VBLANK_TOTAL_CYCLES 226
@@ -30,10 +30,10 @@ typedef enum PpuStates {
 
 static const char* PpuStates_Str[] {
   "NO_TRANSITION",
-  "OAM_SCAN",
-  "PIXEL_TRANSFER",
   "HBLANK",
   "VBLANK",
+  "OAM_SCAN",
+  "PIXEL_TRANSFER",
 };
 
 static const uint8_t PPU_STATE_CYCLES[5] = {
@@ -49,13 +49,15 @@ class Ppu
   private:
     Bus*    bus;
     Display* disp;
-    uint8_t Ppu_State = VBLANK; // not sure what it actually starts in
+    uint8_t ppuState = VBLANK; // not sure what it actually starts in
 
     // Cycles since the last time the PPU actually ran.
     int cyclesSinceLastExec = 0;
     
     // x coord for pixel transfer
     uint16_t x = 0;
+
+    int ppuCyclesElapsed = 0;
 
     static Color gb_colors[4];
 
@@ -74,7 +76,7 @@ class Ppu
     bool UseUnsignedAddressing(void);
 
   public:
-    bool Execute(uint8_t cpu_cycles_elapsed);
+    bool Execute(uint8_t cpuCyclesElapsed);
     int cnt = 144; // ???
 
     // Constructor & destructor

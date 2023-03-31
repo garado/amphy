@@ -13,6 +13,7 @@
 
 int main( int argc, char* argv[] )
 {
+  // TODO fix this disgusting bs
   Cpu* cpu;
   Bus* bus;
   Ppu* ppu;
@@ -29,13 +30,14 @@ int main( int argc, char* argv[] )
   cpu->debugger = debugger;
   cpu->ppu = ppu;
   cpu->bus = bus;
+  bus->cpu = cpu;
 
   ParseFlags(argc, argv, cpu);
 
   // Read ROM (default to test rom if nothing was given)
   bool bus_status;
   if (argc > 1) {
-    bus_status = bus->CopyRom(argv[argc-1]);  
+    bus_status = bus->CopyRom(argv[argc-1]);
   } else {
     std::cout << "No ROM provided! Exiting :(" << std::endl;
     return EXIT_SUCCESS;
@@ -51,9 +53,12 @@ int main( int argc, char* argv[] )
   bus->Write(STAT, 0x81);
   bus->Init();
 
-  while(true) {
+  disp->Init();
 
-    // Run CPU
+  while(!disp->amphy_quit) {
+
+    disp->HandleEvent();
+
     try {
       cpu->Execute();
     } catch (...) {
@@ -62,14 +67,6 @@ int main( int argc, char* argv[] )
       return EXIT_FAILURE;
     }
 
-    // // Run PPU
-    // uint8_t cycles_elapsed = cpu->get_last_cycles();
-    // bool ppu_exec_result = ppu->Execute(cycles_elapsed);
-    // if (ppu_exec_result == FAILURE) {
-    //   std::cout << __PRETTY_FUNCTION__ << ": Fatal PPU error: exiting" << std::endl;
-    //   break;
-    // }
-    
     // Read serial output from Blargg's test roms
     if (bus->Read(0xFF02) == 0x81) {
       fprintf(stderr, "%c", bus->Read(0xFF01));
@@ -81,6 +78,8 @@ int main( int argc, char* argv[] )
   delete(cpu);
   delete(bus);
   delete(ppu);
+
+  disp->Close();
 
   return EXIT_SUCCESS;
 }

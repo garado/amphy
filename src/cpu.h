@@ -14,6 +14,7 @@
 // Using t-cycles
 #define MEM_RW_CYCLES 4
 #define ALU_CYCLES 4
+#define NOP_CYCLES 4
 
 // Timer control
 #define TAC_ENABLE_BIT 0x2
@@ -80,10 +81,19 @@ typedef enum Cpu_States {
   CPU_NORMAL,
   CPU_HALT_IME_SET,
   CPU_HALT_IME_NOT_SET,
-  CPU_PRE_EI,
-  CPU_TRIGGER_EI,
+  CPU_EI,
   CPU_HALT_BUG,
+  CPU_STOP,
 } Cpu_States;
+
+static const char* Cpu_StatesStr[7] = {
+  "CPU_NORMAL",
+  "CPU_HALT_IME_SET",
+  "CPU_HALT_IME_NOT_SET",
+  "CPU_EI",
+  "CPU_HALT_BUG",
+  "CPU_STOP",
+};
 
 typedef uint16_t Address;
 typedef uint8_t Register;
@@ -97,18 +107,18 @@ class Cpu
 {
   private:
     uint8_t a = 0x01;
-    uint8_t b = 0x00;
+    uint8_t b = 0xFF;
     uint8_t c = 0x13;
     uint8_t d = 0x00;
-    uint8_t e = 0xD8;
-    uint8_t h = 0x01;
-    uint8_t l = 0x4D;
+    uint8_t e = 0xC1;
+    uint8_t h = 0x84;
+    uint8_t l = 0x03;
 
     struct f {
-      bool Z = true;  // Zero
+      bool Z = false;  // Zero
       bool N = false; // Subtract
-      bool HC = true;  // Half carry
-      bool C = true;  // Carry
+      bool HC = false;  // Half carry
+      bool C = false;  // Carry
     } f;
 
     uint8_t op = 0x00;
@@ -284,6 +294,7 @@ class Cpu
       "LDH_A_atu8", "POP_AF",     "LDH_A_atC",  "DI",         "NULL",         "PUSH_AF",    "OR_A_u8",    "RST_30h",    "LD_HL_SP_i8",  "LD_SP_HL",   "LD_A_atu16", "EI",       "NULL",       "NULL",     "CP_A_u8",    "RST_38h",  // F0+
     };
 
+  friend class Bus;
   friend class Debugger;
 };
 
