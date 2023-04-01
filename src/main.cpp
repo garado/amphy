@@ -52,7 +52,7 @@ int main( int argc, char* argv[] )
   bus->Write(LY, 0x90);
   bus->Write(STAT, 0x81);
   bus->Init();
-
+  cpu->Init();
   disp->Init();
 
   while(!disp->amphy_quit) {

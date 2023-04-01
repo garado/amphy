@@ -102,39 +102,4 @@ typedef struct Color {
 #define WX   0xFF4B // WX: Window X coord
 #define BOOT 0xFF50 // Boot ROM control
 
-
-/* █▀▄▀█ █▄▄ █▀▀ */
-/* █░▀░█ █▄█ █▄▄ */
-
-#define CART_TYPE 0x0147
-
-#define CT_ROM_ONLY        0x00 // done
-#define CT_MBC1            0x01 // done
-#define CT_MBC1_RAM        0x02
-#define CT_MBC1_RAM_BAT    0x03
-#define CT_MBC2            0x05
-#define CT_MBC2_BAT        0x06
-#define CT_ROM_RAM_1       0x08
-#define CT_ROM_RAM_BAT_1   0x09
-#define CT_MMM01           0x0B
-#define CT_MMM01_RAM       0x0C
-#define CT_MMM01_RAM_BAT   0x0D
-#define CT_MBC3_TMR_BAT    0x0F
-#define CT_MBC3_TMR_RAM_BAT_2 0x10
-#define CT_MBC3            0x11
-#define CT_MBC3_RAM_2      0x12
-#define CT_MBC3_RAM_BAT_2  0x13
-#define CT_MBC5            0x19
-#define CT_MBC5_RAM        0x1A
-#define CT_MBC5_RAM_BAT    0x1B
-#define CT_MBC5_RUM        0x1C
-#define CT_MBC5_RUM_RAM    0x1D
-#define CT_MBC5_RUM_RAM_BAT 0x1E
-#define CT_MBC6            0x20
-#define CT_MBC7_SENSOR_RUM_RAM_BAT 0x22
-#define CT_POCKET CAMERA   0xFC
-#define CT_BANDAI TAMA5    0xFD
-#define CT_HuC3            0xFE
-#define CT_HuC1_RAM_BAT    0xFF
-
 #endif

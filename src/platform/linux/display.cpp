@@ -14,8 +14,8 @@ bool Display::Init() {
   bool status = EXIT_SUCCESS;
 
   if( SDL_Init( SDL_INIT_VIDEO ) >= 0 ) {
-    SDL_CreateWindowAndRenderer(SCREEN_WIDTH,
-                                SCREEN_HEIGHT,
+    SDL_CreateWindowAndRenderer(SCREEN_WIDTH * 3,
+                                SCREEN_HEIGHT * 3,
                                 0,
                                 &gWindow, &renderer);
     if (gWindow != NULL) {
@@ -33,7 +33,7 @@ bool Display::Init() {
   SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
   if ( status == EXIT_SUCCESS ) {
-    LoadSplash();
+    // LoadSplash();
   } else {
     printf("SDL: Failed to initialize.");
   }

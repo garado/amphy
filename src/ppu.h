@@ -84,6 +84,8 @@ class Ppu
       bus = bus_;
       disp = disp_;
     }
+
+    friend class Debugger;
 };
 
 #endif

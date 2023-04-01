@@ -5,6 +5,10 @@
 #include "bus.h"
 #include <cstdio>
 
+void Cpu::Init() {
+  divPtr = bus->GetAddressPointer(DIV);
+}
+
 /* @Function Cpu::Execute
  * @brief Execute one instruction. */
 void Cpu::Execute() {
@@ -130,10 +134,6 @@ uint8_t Cpu::MemRead_u8(Address * addr)
 
 uint16_t Cpu::MemRead_u16(Address * addr)
 {
-  // uint8_t lsb = MemReadRaw((*addr)++);
-  // Tick(MEM_RW_CYCLES);
-  // uint8_t msb = MemReadRaw((*addr)++);
-  // Tick(MEM_RW_CYCLES);
   uint8_t lsb = MemReadRaw((*addr)++);
   uint8_t msb = MemReadRaw((*addr)++);
   return (msb << 8) | lsb;
@@ -478,10 +478,7 @@ void Cpu::RunTimer(uint8_t cycles)
 {
   uint16_t old_sysclk = sysclk;
   sysclk += cycles;
-
-  bus->allow_div = true; // TODO jank
-  bus->Write(DIV, sysclk >> 8);
-  bus->allow_div = false;
+  *divPtr = sysclk >> 8;
 
   // TIMA is incremented at the frequency specified by TAC.
   // When the value > 0xFF (overflows), it is reset to the value
@@ -490,6 +487,22 @@ void Cpu::RunTimer(uint8_t cycles)
 
   // Don't do anything if timer not enabled
   if (!TAC_ENABLE_MASK(tac)) return;
+
+  if (doneTMAreload) doneTMAreload = false;
+
+  // TIMA reload
+  if (doTMAreload) {
+    tmaReload -= cycles;
+    if (tmaReload == 0) {
+      uint8_t tma = bus->Read(TMA);
+      bus->Write(TIMA, tma);
+      doTMAreload = false;
+
+      // helps prevent writes to tima while tima is
+      // reloading
+      doneTMAreload = true;
+    }
+  }
 
   // If tac_select has value TAC_1024, then it updates every
   // 1024 clock cycles. log_2(1024) = 10. We can tell if 1024
@@ -514,12 +527,13 @@ void Cpu::RunTimer(uint8_t cycles)
     // overflow occurs. Increment normally otherwise.
     if (tima == 0xFF) {
 
-      uint8_t tma = bus->Read(TMA);   // Reset to TMA
-      bus->Write(TIMA, tma);
+      // After overflow, TIMA contains 0 for 4 m-cycles before
+      // being reloaded with value from TMA register
+      doTMAreload = true;
+      tmaReload = TMA_RELOAD;
+      bus->Write(TIMA, 0);
 
-      uint8_t irq = bus->Read(INTF);  // Set interrupt flag
-      irq |= (1 << INTR_TMR);
-      bus->Write(INTF, irq);
+      bus->BitSet(INTF, INTF_TMR_IRQ);
     } else {
       bus->Write(TIMA, ++tima);
     }

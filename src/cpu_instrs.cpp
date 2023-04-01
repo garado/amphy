@@ -487,7 +487,7 @@ void Cpu::RET_cc(Flag * flag, bool cond) {
   }
 }
 
-/* E0: LD (FF00 + a8), A 
+/* E0: LD (FF00 + a8), A
  * Store contents of Reg A into (FF00 + a8) */
 void Cpu::LD_a8_A() {
   uint8_t a8 = MemRead_u8(&pc);

@@ -17,10 +17,12 @@
 bool testflag;
 
 void Bus::Init() {
-  allow_div = true;
-  Write(DIV, 0x1E);
-  Write(LCDC, 0x91); //??
-  allow_div = false;
+  cartType = rom_00.at(CART_TYPE);
+  io_reg.at(TAC  - IO_START) = 0xF8;
+  io_reg.at(LCDC - IO_START) = 0x00;
+  io_reg.at(JOYP - IO_START) = 0xCF;
+  // io_reg.at(INTE - IO_START) = 0xE0;
+  // io_reg.at(INTF - IO_START) = 0xE0;
 }
 
 uint8_t Bus::Read(uint16_t address) const {
@@ -44,8 +46,8 @@ uint8_t Bus::Read(uint16_t address) const {
   } else if (address < INVALID_START) {
     return oam.at(address - OAM_START);
   } else if (address < IO_START) {
+    // fprintf(stderr, "Warning: Invalid memory region read: 0x%04x\n", address);
     return 0xFF;
-    fprintf(stderr, "INVALID MEMORY REGION READ: 0x%4x\n", address);
   } else if (address < HRAM_START) {
     return io_reg.at(address - IO_START);
   } else if (address < 0xFFFF) {
@@ -60,29 +62,12 @@ uint8_t Bus::Read(uint16_t address) const {
 }
 
 void Bus::Write(uint16_t address, uint8_t val) {
-  // Any write to DIV timer sets it to 0
-  if (!allow_div && address == DIV) {
-    val = 0;
-    cpu->sysclk = 0;
-  }
-
-  // Upper 5 TAC bits are pulled up to 1
-  if (address == TAC) val |= 0b11111000;
+  if (address == TIMA && cpu->doneTMAreload) return;
 
   if (address < ROM1_START) {
-    // MBC: RAM enable
-    if (address < 0x1FFF) {
-      ramEnable = (val & 0b1111) == 0xA;
-    }
-
-    // MBC: ROM bank number
-    else if (address < 0x3FFF) {
-      if (val == 0) val = 1;
-      SwitchBanks(val);
-    }
-
+    MBC(address, val);
   } else if (address < VRAM_START) {
-
+    MBC(address, val);
   } else if (address < EXTRAM_START) {
     vram.at(address - VRAM_START) = val;
   } else if (address < WRAM0_START) {
@@ -96,13 +81,46 @@ void Bus::Write(uint16_t address, uint8_t val) {
   } else if (address < INVALID_START) {
     oam.at(address - OAM_START) = val;
   } else if (address < IO_START) {
-    fprintf(stderr, "INVALID MEMORY REGION WRITE: 0x%2.0x to 0x%4.0x\n", val, address);
+    // fprintf(stderr, "Warning: Invalid memory region write: 0x%02x to 0x%04x\n", val, address);
   } else if (address < HRAM_START) {
-    io_reg.at(address - IO_START) = val;
+    Write_MMIO(address, val);
   } else if (address < 0xFFFF) {
-    hram.at(address - HRAM_START) = val;    
+    hram.at(address - HRAM_START) = val;
   } else if (address == 0xFFFF) {
     int_enable = val;
+  }
+}
+
+/* Special handling for writing to IO registers */
+void Bus::Write_MMIO(uint16_t address, uint8_t val) {
+  uint8_t curVal = Read(address);
+  uint8_t mask;
+  Address shiftedAddr = address - IO_START;
+
+  switch (address) {
+
+    // case INTE: // only lower 5 bits writable
+    // case INTF:
+    //   io_reg.at(shiftedAddr) = curVal | (val & 0x1F);
+    //   break;
+
+    case DIV: // any write clears
+      io_reg.at(shiftedAddr) = 0;
+      cpu->sysclk = 0;
+      break;
+
+    case TAC: // only bit 0-2 writable
+      io_reg.at(shiftedAddr) = curVal | (val & 0b111);
+      break;
+
+    case JOYP: // only one of bit 4, 5 writable
+      mask = 0b00110000;
+      io_reg.at(shiftedAddr) = (curVal & ~mask) | (mask & val);
+      break;
+
+    default:
+      io_reg.at(shiftedAddr) = val;
+      break;
   }
 }
 
@@ -123,9 +141,12 @@ uint8_t Bus::CopyRom(std::string fname) {
      (std::istreambuf_iterator<char>()));
   infile.close();
 
+  // Copy 0000-3FFF to bank 0
   std::vector<uint8_t>::const_iterator first = rom_.begin();
   std::vector<uint8_t>::const_iterator last = rom_.begin() + 0x3FFF;
   rom_00.insert(rom_00.begin(), first, last);
+
+  // Copy 4000-7FFF to bank 1
   first = rom_.begin() + 0x4000;
   last = rom_.begin() + 0x7FFF;
   rom_01.insert(rom_01.begin(), first, last);
@@ -165,6 +186,43 @@ uint8_t * Bus::GetAddressPointer(uint16_t address)
   return &(*it);
 }
 
+void Bus::MBC(uint16_t addr, uint8_t value) {
+
+  switch (cartType) {
+    case CT_ROM_ONLY: break;
+
+    case CT_MBC1:
+      if (addr < 0x1FFF) {
+        ramEnable = value == 0x0A; 
+      } else if (addr < 0x3FFF) {
+        value &= 0x1F; // only lower 5 bits used
+        if (value == 0) value = 1;
+        SwitchBanks(value);
+      }
+      break;
+
+    default: break;
+  }
+}
+
+void Bus::SwitchBanks(uint8_t bankNum) {
+  // Open rom for reading
+  std::ifstream infile(romFname, std::ios::binary);
+  
+  std::vector<uint8_t> const romfile_(
+     (std::istreambuf_iterator<char>(infile)),
+     (std::istreambuf_iterator<char>()));
+  infile.close();
+
+  std::vector<uint8_t>::const_iterator first = romfile_.begin();
+  first += (bankNum * BANK_SIZE);
+
+  std::vector<uint8_t>::const_iterator last = romfile_.begin() + 0x3FFF;
+  last += (bankNum * BANK_SIZE);
+
+  rom_01.insert(rom_01.begin(), first, last);
+}
+
 /* Maybe these should be moved elsewhere (utils?) */
 uint8_t const Bus::BitTest(uint16_t address, uint8_t bitpos) {
   return (Read(address) & (1 << bitpos));
@@ -180,24 +238,4 @@ void Bus::BitClear(uint16_t address, uint8_t bitpos) {
   uint8_t mask = ~(1 << bitpos);
   uint8_t data = Read(address) & mask;
   Write(address, data);
-}
-
-void Bus::SwitchBanks(uint8_t bankNum) {
-  // Open rom for reading
-  std::ifstream infile(romFname, std::ios::binary);
-  
-  std::vector<uint8_t> const romfile_(
-     (std::istreambuf_iterator<char>(infile)),
-     (std::istreambuf_iterator<char>()));
-  infile.close();
-
-  std::vector<uint8_t>::const_iterator first = romfile_.begin();
-  first += (bankNum * 0x2000);
-
-  std::vector<uint8_t>::const_iterator last = romfile_.begin() + 0x3FFF;
-  last += (bankNum * 0x2000);
-
-  rom_01.insert(rom_01.begin(), first, last);
-
-  cartType = rom_00.at(CART_TYPE);
 }

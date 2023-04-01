@@ -25,6 +25,8 @@
 #define TAC_64   0b10
 #define TAC_256  0b11
 
+#define TMA_RELOAD 4 // 1 m cycle
+
 // Interrupts
 #define INTR_TYPES 5
 
@@ -133,6 +135,9 @@ class Cpu
     Cpu_States cpuState = CPU_NORMAL;
 
   private:
+    uint8_t * divPtr;
+
+  private:
     uint16_t const inline af() { return (a << 8) | GetFlagsAsInt(); }
     uint16_t const inline bc() { return b << 8 | c; }
     uint16_t const inline de() { return d << 8 | e; }
@@ -179,12 +184,17 @@ class Cpu
     void HandleInterrupt();
     void RunTimer(uint8_t cycles);
 
+    bool doTMAreload = false;
+    bool doneTMAreload = false;
+    uint8_t tmaReload = 0;
+
   public: // make private later
     Bus * bus;
     Ppu * ppu;
     Debugger * debugger;
 
   public:
+    void Init();
     void Execute();
     void RunInstruction();
 
@@ -192,6 +202,7 @@ class Cpu
   public:
     bool gbdoc = false; // regdump
     bool step = false; // step 1 instruction
+    bool doLog = false;
 
   public:
     Cpu(Bus* bus_, Ppu* ppu_, Debugger * debugger_) {

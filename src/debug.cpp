@@ -192,5 +192,8 @@ void Debugger::PrintCpuState() {
 }
 
 void Debugger::PrintPpuState() {
-  printf("Not implemented yet\n");
+  printf("=== PPU STATE ===\n" \
+      "State: %s\n", \
+      PpuStates_Str[ppu->ppuState]
+      );
 }

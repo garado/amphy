@@ -124,7 +124,9 @@ void Ppu::OAMScan(uint8_t *nextState)
  * drawing all layers. Each pixel takes 4 cycles to draw. */
 void Ppu::PixelTransfer(uint8_t *nextState)
 {
-  Px_RenderBackground();
+  if (bus->BitTest(LCDC, LCDC_EN) == false) return;
+
+  if (bus->BitTest(LCDC, LCDC_BG_EN)) Px_RenderBackground();
 
   // Check if BG enabled
   // if (!bus->BitTest(LCDC, LCDC_BG_EN)) {
@@ -161,7 +163,7 @@ void Ppu::Px_RenderBackground(void)
   uint16_t tilemap_offset = (tilemap_y * 32) + tilemap_x;
   uint16_t tilemap_addr = tilemap_base + tilemap_offset;
 
-  // printf("x, ly: %d %d\n", x, bus->Read(LY));
+  // printf("    x, ly: %d %d\n", x, bus->Read(LY));
   // printf("    scx, scy: %d %d\n", bus->Read(SCX), bus->Read(SCY));
   // printf("    Tilemap x, y: %d %d\n", tilemap_x, tilemap_y);
   // printf("    Tilemap addr: 0x%x\n", tilemap_addr);
@@ -257,5 +259,5 @@ void Ppu::VBlank(uint8_t *nextState)
  *    address $$9000) */
 bool Ppu::UseUnsignedAddressing(void)
 {
-  return bus->BitTest(LCDC, LCDC_BGW_ADDR_MODE) == 0;
+  return bus->BitTest(LCDC, LCDC_BGW_ADDR_MODE);
 }
