@@ -193,7 +193,12 @@ void Debugger::PrintCpuState() {
 
 void Debugger::PrintPpuState() {
   printf("=== PPU STATE ===\n" \
-      "State: %s\n", \
-      PpuStates_Str[ppu->ppuState]
+      "State: %s\n"     \
+      "x, ly: %d %d\n"  \
+      "cnt: %d\n",      \
+      PpuStates_Str[ppu->ppuState],
+      ppu->x,
+      bus->Read(LY),
+      ppu->cnt
       );
 }

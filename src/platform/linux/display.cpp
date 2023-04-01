@@ -104,8 +104,79 @@ void Display::Render()
  * @brief Handles SDL events. */
 void Display::HandleEvent() {
   while (SDL_PollEvent(&e) != 0) {
+    uint8_t key, keyType;
+
     if (e.type == SDL_QUIT) {
       amphy_quit = true;
+    }
+
+    else if (e.type == SDL_KEYDOWN) {
+
+      switch (e.key.keysym.sym) {
+        case SDLK_RIGHT:
+          cpu->Key_Down(KEYTYPE_DIR, KEY_R_A);
+          break;
+        case SDLK_d:
+          cpu->Key_Down(KEYTYPE_ACT, KEY_R_A);
+          break;
+        
+        case SDLK_LEFT:
+          cpu->Key_Down(KEYTYPE_DIR, KEY_L_B);
+          break;
+        case SDLK_f:
+          cpu->Key_Down(KEYTYPE_ACT, KEY_L_B);
+          break;
+        
+        case SDLK_UP:
+          cpu->Key_Down(KEYTYPE_DIR, KEY_UP_SEL);
+          break;
+        case SDLK_RSHIFT:
+          cpu->Key_Down(KEYTYPE_ACT, KEY_UP_SEL);
+          break;
+        
+        case SDLK_DOWN:
+          cpu->Key_Down(KEYTYPE_DIR, KEY_DW_START);
+          break;
+        case SDLK_RETURN:
+          cpu->Key_Down(KEYTYPE_ACT, KEY_DW_START);
+          break;
+        
+        default: break;
+      }
+    }
+
+    else if (e.type == SDL_KEYUP) {
+      switch (e.key.keysym.sym) {
+        case SDLK_RIGHT:
+          cpu->Key_Up(KEYTYPE_DIR, KEY_R_A);
+          break;
+        case SDLK_d:
+          cpu->Key_Up(KEYTYPE_ACT, KEY_R_A);
+          break;
+        
+        case SDLK_LEFT:
+          cpu->Key_Up(KEYTYPE_DIR, KEY_L_B);
+          break;
+        case SDLK_f:
+          cpu->Key_Up(KEYTYPE_ACT, KEY_L_B);
+          break;
+        
+        case SDLK_UP:
+          cpu->Key_Up(KEYTYPE_DIR, KEY_UP_SEL);
+          break;
+        case SDLK_RSHIFT:
+          cpu->Key_Up(KEYTYPE_ACT, KEY_UP_SEL);
+          break;
+        
+        case SDLK_DOWN:
+          cpu->Key_Up(KEYTYPE_DIR, KEY_DW_START);
+          break;
+        case SDLK_RETURN:
+          cpu->Key_Up(KEYTYPE_ACT, KEY_DW_START);
+          break;
+        
+        default: break;
+      }
     }
   }
 }

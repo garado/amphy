@@ -57,6 +57,17 @@ class Ppu
     // x coord for pixel transfer
     uint16_t x = 0;
 
+    // Pointers to commonly used registers
+    // saves me some keystrokes
+    uint8_t * ly;
+    uint8_t * wx;
+    uint8_t * wy;
+    uint8_t * scx;
+    uint8_t * scy;
+    uint8_t * stat;
+    uint8_t * lcdc;
+    uint8_t * intf;
+
     int ppuCyclesElapsed = 0;
 
     static Color gb_colors[4];
@@ -68,14 +79,15 @@ class Ppu
     void VBlank(uint8_t *nextState);
 
     void Px_RenderBackground(void);
-    void Px_Window(void);
-    void Px_Sprite(void);
+    void Px_RenderWindow(void);
+    void Px_RenderSprite(void);
 
     // Helpers
     void UpdateCycles(uint8_t state);
     bool UseUnsignedAddressing(void);
 
   public:
+    void Init();
     bool Execute(uint8_t cpuCyclesElapsed);
     int cnt = 144; // ???
 

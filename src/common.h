@@ -17,6 +17,14 @@ typedef struct Color {
 #define FAILURE 1
 #define SUCCESS 0
 
+/* █▀▄▀█ ▄▀█ █▀▀ █▀█ █▀█ █▀ */
+/* █░▀░█ █▀█ █▄▄ █▀▄ █▄█ ▄█ */
+
+#define BIT_TOGGLE(byte,nbit) ((byte) ^ (1 << nbit))
+#define BIT_SET(byte,nbit)    ((byte) | (1 << nbit)) 
+#define BIT_TEST(byte,nbit)   ((byte) & (1 << nbit))
+#define BIT_CLEAR(byte,nbit)  ((byte) & ~(1 << nbit)) 
+#define BIT_GET(byte,nbit)    ((byte >> nbit) & 1)
 
 /* █▀█ █▀▀ █▀▀ █ █▀ ▀█▀ █▀▀ █▀█ █▀ */
 /* █▀▄ ██▄ █▄█ █ ▄█ ░█░ ██▄ █▀▄ ▄█ */
@@ -101,5 +109,21 @@ typedef struct Color {
 #define WY   0xFF4A // WY: Window Y coord
 #define WX   0xFF4B // WX: Window X coord
 #define BOOT 0xFF50 // Boot ROM control
+
+
+/* █▄▀ █▀▀ █▄█ █▀ */
+/* █░█ ██▄ ░█░ ▄█ */
+
+enum KeyType {
+  KEYTYPE_DIR,
+  KEYTYPE_ACT,
+};
+
+enum Keys {
+  KEY_R_A,
+  KEY_L_B,
+  KEY_UP_SEL,
+  KEY_DW_START,
+};
 
 #endif

@@ -2,14 +2,16 @@
 /* █▀▀ █▀█ █░█ */
 /* █▄▄ █▀▀ █▄█ */
 
-#ifndef CPU__H
-#define CPU__H
+#ifndef CPU_H
+#define CPU_H
 
 #include <stdio.h>
 #include <iostream>
 #include <array>
 #include <fstream>
 #include <vector>
+
+#include "common.h"
 
 // Using t-cycles
 #define MEM_RW_CYCLES 4
@@ -57,6 +59,15 @@ const uint8_t Intr_Addr[5] = {
   ISR_ADDR_SRL,
   ISR_ADDR_JOYP
 };
+
+/* Joypad */
+#define JOYP_SEL_MASK   0b00110000
+#define JOYP_SEL_ACTION 5
+#define JOYP_SEL_DIR    4
+#define JOYP_D_STRT 3
+#define JOYP_U_SEL  2
+#define JOYP_L_B    1
+#define JOYP_R_A    0
 
 // Disassembly table stuff
 typedef enum DT_ALU_Type {
@@ -134,8 +145,13 @@ class Cpu
 
     Cpu_States cpuState = CPU_NORMAL;
 
+  // Pointers to commonly used stuff
+  // figured it might be faster than a whole call to bus->read
   private:
     uint8_t * divPtr;
+    uint8_t * joypPtr;
+    uint8_t * intf;
+    uint8_t * inte;
 
   private:
     uint16_t const inline af() { return (a << 8) | GetFlagsAsInt(); }
@@ -188,6 +204,9 @@ class Cpu
     bool doneTMAreload = false;
     uint8_t tmaReload = 0;
 
+    uint8_t keyvec_dir = 0x0F;
+    uint8_t keyvec_act = 0x0F;
+
   public: // make private later
     Bus * bus;
     Ppu * ppu;
@@ -197,6 +216,8 @@ class Cpu
     void Init();
     void Execute();
     void RunInstruction();
+    void Key_Up(KeyType type, Keys key);
+    void Key_Down(KeyType type, Keys key);
 
   // Flags
   public:

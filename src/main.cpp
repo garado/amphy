@@ -31,6 +31,7 @@ int main( int argc, char* argv[] )
   cpu->ppu = ppu;
   cpu->bus = bus;
   bus->cpu = cpu;
+  disp->cpu = cpu;
 
   ParseFlags(argc, argv, cpu);
 
@@ -53,6 +54,7 @@ int main( int argc, char* argv[] )
   bus->Write(STAT, 0x81);
   bus->Init();
   cpu->Init();
+  ppu->Init();
   disp->Init();
 
   while(!disp->amphy_quit) {

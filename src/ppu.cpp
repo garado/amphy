@@ -2,10 +2,10 @@
 /* █▀▀ █▀█ ▄▀█ █▀█ █░█ █ █▀▀ █▀ */
 /* █▄█ █▀▄ █▀█ █▀▀ █▀█ █ █▄▄ ▄█ */
 
+#include "common.h"
 #include "ppu.h"
 #include "bus.h"
 #include "platform/platform.h"
-#include "common.h"
 #include <cstdio>
 
 /*                  240                       68
@@ -34,11 +34,21 @@ Color color_3 = {155, 188, 15};
 
 Color Ppu::gb_colors[4] = { color_0, color_1, color_2, color_3 };
 
+void Ppu::Init() {
+  ly    = bus->GetAddressPointer(LY);
+  wx    = bus->GetAddressPointer(WX);
+  wy    = bus->GetAddressPointer(WY);
+  scx   = bus->GetAddressPointer(SCX);
+  scy   = bus->GetAddressPointer(SCY);
+  stat  = bus->GetAddressPointer(STAT);
+  lcdc  = bus->GetAddressPointer(LCDC);
+  intf  = bus->GetAddressPointer(INTF);
+}
+
 /* @Function Ppu::Execute
  * @param cpuCyclesElapsed
  * @brief Runs PPU until it catches up to the CPU. */
-bool Ppu::Execute(uint8_t cpuCyclesElapsed)
-{
+bool Ppu::Execute(uint8_t cpuCyclesElapsed) {
   cyclesSinceLastExec += cpuCyclesElapsed;
   uint8_t nextState = NO_TRANSITION;
 
@@ -66,33 +76,26 @@ bool Ppu::Execute(uint8_t cpuCyclesElapsed)
   // Set mode flags and interrupts for state transitions
   if (nextState != NO_TRANSITION) {
     ppuState = nextState;
-    uint8_t stat = bus->Read(STAT);
 
     // Mode flags
-    // Decrement nextState because it's offset by 1
-    stat = (stat & 0b00) | (nextState-1);
-    bus->Write(STAT, stat);
+    // decrement nextState because it's offset by 1
+    *stat = (*stat & 0b00) | (nextState - 1);
 
     // VBlank interrupt
-    if (bus->BitTest(INTE, INTE_VBLANK_IE)) {
-      bus->BitSet(INTF, INTF_VBLANK_IRQ);
-    }
+    *intf = BIT_SET(*intf, INTF_VBLANK_IRQ);
 
     // STAT interrupts
-    // TODO #defines
+    // TODO #defines cause wtf are these numbers
     uint8_t setStatIntr = false;
-    if ((nextState == HBLANK) && (stat & 0b0001000)) {
+    if ((nextState == HBLANK) && (*stat & 0b0001000)) {
       setStatIntr = true;
-    } else if ((nextState == VBLANK) && (stat & 0b0010000)) {
+    } else if ((nextState == VBLANK) && (*stat & 0b0010000)) {
       setStatIntr = true;
-    } else if ((nextState == OAM_SCAN) && (stat & 0b0100000)) {
+    } else if ((nextState == OAM_SCAN) && (*stat & 0b0100000)) {
       setStatIntr = true;
     }
 
-    uint8_t statIntrEnabled = bus->BitTest(INTE, INTE_STAT_IE);
-    if (setStatIntr && statIntrEnabled) {
-      bus->BitSet(INTF, INTF_STAT_IRQ);
-    }
+    if (setStatIntr) *intf = BIT_SET(*intf, INTF_STAT_IRQ);
   }
 
   return EXIT_SUCCESS;
@@ -119,24 +122,19 @@ void Ppu::OAMScan(uint8_t *nextState)
   *nextState = PIXEL_TRANSFER;
 }
 
-/* Ppu::PixelTransfer()
- * Draw pixels to the screen. This function handles
- * drawing all layers. Each pixel takes 4 cycles to draw. */
 void Ppu::PixelTransfer(uint8_t *nextState)
 {
-  if (bus->BitTest(LCDC, LCDC_EN) == false) return;
+  if (BIT_TEST(*lcdc, LCDC_EN) == false) return;
 
-  if (bus->BitTest(LCDC, LCDC_BG_EN)) Px_RenderBackground();
+  // Determine which layer gets drawn (sprites not implemented yet)
+  bool winEn = BIT_TEST(*lcdc, LCDC_WIN_EN);
+  bool bgEn = BIT_TEST(*lcdc, LCDC_BG_EN);
 
-  // Check if BG enabled
-  // if (!bus->BitTest(LCDC, LCDC_BG_EN)) {
-  //   disp->DrawPixel(x, bus->Read(LY), &color_0);
-  //   ++x;
-  //   if (x >= PX_TRANSFER_X_DURATION) {
-  //     *nextState = HBLANK;
-  //   }
-  //   return;
-  // }
+  if (winEn && (*wy <= *ly) && ((*wx)+7 <= x)) {
+    Px_RenderWindow();
+  } else if (bgEn) {
+    Px_RenderBackground();
+  }
 
   ++x;
   if (x >= PX_TRANSFER_X_DURATION) {
@@ -148,20 +146,16 @@ void Ppu::PixelTransfer(uint8_t *nextState)
  * @brief Render a background pixel */
 void Ppu::Px_RenderBackground(void)
 {
-  uint8_t ly = bus->Read(LY);
-
   // Determine which of the 2 tilemaps to use
   // TODO #define
-  uint8_t tilemap_flag = bus->BitTest(LCDC, LCDC_BG_TMAP);
-  uint16_t tilemap_base = tilemap_flag ? 0x9C00 : 0x9800;
+  uint16_t tmap_base = BIT_TEST(*lcdc, LCDC_BG_TMAP)? 0x9C00 : 0x9800;
 
-  // printf("Tilemap base addr: 0x%x\n", tilemap_base);
 
-  // Determine tilemap index (coords are in bytes)
-  uint16_t tilemap_y = (ly + bus->Read(SCY)) / 8;
-  uint16_t tilemap_x = (bus->Read(SCX) + x) / 8;
-  uint16_t tilemap_offset = (tilemap_y * 32) + tilemap_x;
-  uint16_t tilemap_addr = tilemap_base + tilemap_offset;
+  // Determine tilemap index 0-1024
+  uint16_t tmap_y = (*ly + *scy) / 8;
+  uint16_t tmap_x = (*scx + x) / 8;
+  uint16_t tmap_offset = (tmap_y * 32) + tmap_x;
+  uint16_t tmap_addr = tmap_base + tmap_offset;
 
   // printf("    x, ly: %d %d\n", x, bus->Read(LY));
   // printf("    scx, scy: %d %d\n", bus->Read(SCX), bus->Read(SCY));
@@ -169,58 +163,81 @@ void Ppu::Px_RenderBackground(void)
   // printf("    Tilemap addr: 0x%x\n", tilemap_addr);
 
   // Read tile data using tile index
-  uint16_t tiledata_address, tiledata_base;
+  uint16_t tdata_addr, tdata_base;
   if (UseUnsignedAddressing()) {
-    tiledata_base = 0x8000;
-    uint8_t tiledata_offset = bus->Read(tilemap_addr);
-    tiledata_address = tiledata_base + (tiledata_offset * 16);
+    tdata_base = 0x8000;
+    uint8_t tiledata_offset = bus->Read(tmap_addr);
+    tdata_addr = tdata_base + (tiledata_offset * 16);
   } else {
-    tiledata_base = 0x9000;
-    int8_t tiledata_offset = bus->Read(tilemap_addr);
-    tiledata_address = tiledata_base + (tiledata_offset * 16);
+    tdata_base = 0x9000;
+    int8_t tiledata_offset = bus->Read(tmap_addr);
+    tdata_addr = tdata_base + (tiledata_offset * 16);
   }
 
-  // printf("    Tiledata base: 0x%x\n", tiledata_base);
-  // printf("    Tiledata addr: 0x%x\n", tiledata_address);
+  // printf("    Tiledata base: 0x%x\n", tdata_base);
+  // printf("    Tiledata addr: 0x%x\n", tdata_addr);
 
-  uint8_t bitpos = 7 - ((bus->Read(SCX) + x) % 8);
-  uint8_t tile_y = ((bus->Read(SCY) + ly) % 8);
-  tiledata_address += (tile_y * 2);
+  uint8_t bitpos = 7 - ((*scx + x) % 8); // doesn't work without the 7?
+  uint8_t tile_y = ((*scy + *ly) % 8);
+  tdata_addr += (tile_y * 2);
   // printf("    Tile x y: %d %d\n", bitpos, tile_y);
 
-  uint8_t lsbit = (bus->Read(tiledata_address) >> bitpos) & 0x1;
-  uint8_t msbit = (bus->Read(tiledata_address + 1) >> bitpos) & 0x1;
+  uint8_t lsbit = BIT_GET(bus->Read(tdata_addr), bitpos);
+  uint8_t msbit = BIT_GET(bus->Read(tdata_addr+1), bitpos);
   uint8_t id = (msbit << 1) | msbit;
 
-  Color color = gb_colors[id];
-
-  //disp->Render()
-  disp->DrawPixel(x, bus->Read(LY), &color);
+  disp->DrawPixel(x, *ly, &gb_colors[id]);
 }
 
-void Ppu::Px_Window(void)
-{
+void Ppu::Px_RenderWindow(void) {
+  // Determine which of the 2 tilemaps to use
+  uint16_t tmap_base = BIT_TEST(*lcdc, LCDC_WIN_TMAP)? 0x9C00 : 0x9800;
 
+  // Determine tilemap index 0-1024
+  uint16_t tmap_y = (*ly + *wy) / 8;
+  uint16_t tmap_x = (*wx + x) / 8;
+  uint16_t tmap_offset = (tmap_y * 32) + tmap_x;
+  uint16_t tmap_addr = tmap_base + tmap_offset;
+
+  // Read tile data using tile index
+  uint16_t tdata_addr, tdata_base;
+  if (UseUnsignedAddressing()) {
+    tdata_base = 0x8000;
+    uint8_t tiledata_offset = bus->Read(tmap_addr);
+    tdata_addr = tdata_base + (tiledata_offset * 16);
+  } else {
+    tdata_base = 0x9000;
+    int8_t tiledata_offset = bus->Read(tmap_addr);
+    tdata_addr = tdata_base + (tiledata_offset * 16);
+  }
+
+  uint8_t bitpos = 7 - ((*wx + x) % 8); // doesn't work without the 7?
+  uint8_t tile_y = ((*wy + *ly) % 8);
+  tdata_addr += (tile_y * 2);
+
+  uint8_t lsbit = BIT_GET(bus->Read(tdata_addr), bitpos);
+  uint8_t msbit = BIT_GET(bus->Read(tdata_addr+1), bitpos);
+  uint8_t id = (msbit << 1) | msbit;
+
+  disp->DrawPixel(x, *ly, &gb_colors[id]);
 }
 
-void Ppu::Px_Sprite(void)
+void Ppu::Px_RenderSprite(void)
 {
 
 }
 
 /* Ppu::HBlank */
-void Ppu::HBlank(uint8_t *nextState)
-{
+void Ppu::HBlank(uint8_t *nextState) {
   ++x;
-  uint8_t ly = bus->Read(LY);
 
   // Leave HBlank when x > 308
   if (x >= PX_TRANSFER_X_DURATION + HBLANK_X_DURATION) {
     // Reset x coordinate and increment scanline count
     x = 0;
-    bus->Write(LY, ++ly);
+    (*ly)++;
 
-    if (ly >= PX_TRANSFER_Y_DURATION) {
+    if (*ly >= PX_TRANSFER_Y_DURATION) {
       *nextState = VBLANK;
       disp->Render();
     } else {
@@ -236,14 +253,13 @@ void Ppu::VBlank(uint8_t *nextState)
   cnt -= 2; // TODO #define
 
   // Increment LY
-  uint8_t ly = bus->Read(LY);
   if (cnt <= 0) {
-    bus->Write(LY, ++ly);
+    (*ly)++;
     cnt = 226; // TODO #define
   }
 
   // State change to OAM_SCAN
-  if (ly >= PX_TRANSFER_Y_DURATION + VBLANK_Y_DURATION) {
+  if (*ly >= PX_TRANSFER_Y_DURATION + VBLANK_Y_DURATION) {
     *nextState = OAM_SCAN;
     bus->Write(LY, 0);
     cnt = 226;

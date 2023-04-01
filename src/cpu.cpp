@@ -1,4 +1,5 @@
 
+#include "common.h"
 #include "debug.h"
 #include "cpu.h"
 #include "ppu.h"
@@ -7,6 +8,9 @@
 
 void Cpu::Init() {
   divPtr = bus->GetAddressPointer(DIV);
+  joypPtr = bus->GetAddressPointer(JOYP);
+  intf = bus->GetAddressPointer(INTF);
+  inte = bus->GetAddressPointer(INTE);
 }
 
 /* @Function Cpu::Execute
@@ -443,6 +447,8 @@ void Cpu::HandleInterrupt()
   if (intrPending) {
     if (cpuState == CPU_HALT_IME_NOT_SET) {
       cpuState = CPU_HALT_BUG;
+    } else if (cpuState == CPU_HALT_IME_SET) { // untested
+      cpuState = CPU_NORMAL;
     }
   }
 
@@ -453,13 +459,14 @@ void Cpu::HandleInterrupt()
   if (!ime) return;
 
   for (uint8_t i = 0; i < INTR_TYPES; ++i) {
-    uint8_t ieCurr  = (1 << Intr_Bits[i]) & ie;
-    uint8_t irqCurr = (1 << Intr_Bits[i]) & irq;
+    uint8_t ieCurr  = BIT_TEST(ie, Intr_Bits[i]);
+    uint8_t irqCurr = BIT_TEST(irq, Intr_Bits[i]);
 
     if (ieCurr & irqCurr) {
       Push_u16(pc);
       pc = Intr_Addr[i];
       prevIme = ime;
+      ime = false;
       bus->BitClear(INTF, Intr_Bits[i]);
       return;
     }
@@ -537,5 +544,65 @@ void Cpu::RunTimer(uint8_t cycles)
     } else {
       bus->Write(TIMA, ++tima);
     }
+  }
+}
+
+static const char* keytype_str[2] {
+  "KEYTYPE_DIRECTION",
+  "KEYTYPE_ACTION",
+};
+
+static const char* key_str[4] {
+  "KEY_R_A",
+  "KEY_L_B",
+  "KEY_UP_SEL",
+  "KEY_DW_START",
+};
+
+/* @param type  keytype_dir or keytype_act
+ * @param key   number 0-3 indicating key type
+ * @brief 0 == pressed, so clear bit from corresponding key vector
+ *    Also set interrupt flag when necessary */
+void Cpu::Key_Down(KeyType type, Keys key) {
+  uint8_t * vec = (type == KEYTYPE_DIR) ? &keyvec_dir : &keyvec_act;
+
+  printf("Cpu: Key_Down: %s %s\n", keytype_str[type], key_str[key]);
+
+  // Interrupt on high to low if corresponding keytype bit is selected
+  uint8_t selBit, curType;
+  selBit  = ~BIT_GET(*joypPtr, JOYP_SEL_ACTION);
+  curType = (selBit) ? KEYTYPE_ACT : KEYTYPE_DIR;
+
+  // If this is the currently selected vector:
+  // Set interrupts and update joyp
+  // Note: 0 == selected
+  if (curType == type) {
+    *joypPtr &= 0xF0;
+    *joypPtr |= *vec;
+
+    if (BIT_GET(*vec, key) != 0) {
+      *intf = BIT_SET(*intf, INTF_JOYP_IRQ);
+    }
+  }
+
+  *vec = BIT_CLEAR(*vec, key);
+}
+
+/* @brief 1 == unpressed, so set bit from corresponding key vector
+ * @param type keytype_dir or keytype_act
+ * @param key  number 0-3 indicating key type and also bit position */
+void Cpu::Key_Up(KeyType type, Keys key) {
+  uint8_t * vec = (type == KEYTYPE_DIR) ? &keyvec_dir : &keyvec_act;
+  *vec = BIT_SET(*vec, key);
+
+  // If this is the currently selected vector, update joyp
+  // Note: 0 == selected
+  uint8_t selBit, curType;
+  selBit  = ~BIT_GET(*joypPtr, JOYP_SEL_ACTION);
+  curType = (selBit) ? KEYTYPE_ACT : KEYTYPE_DIR;
+
+  if (curType == type) {
+    *joypPtr &= 0xF0;
+    *joypPtr |= *vec;
   }
 }

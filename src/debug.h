@@ -40,6 +40,8 @@ class Debugger {
       cpu = cpu_;
       ppu = ppu_;
     }
+
+  friend class Cpu;
 };
 
 #endif

@@ -560,6 +560,7 @@ void Cpu::RET() {
 void Cpu::RETI() {
   ime = prevIme;
   pc = MemRead_u16(&sp);
+  bus->Write(INTF, 0);
   Tick(ALU_CYCLES);
 }
 

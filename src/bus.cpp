@@ -113,9 +113,24 @@ void Bus::Write_MMIO(uint16_t address, uint8_t val) {
       io_reg.at(shiftedAddr) = curVal | (val & 0b111);
       break;
 
-    case JOYP: // only one of bit 4, 5 writable
+    /* Writing to this changes what bits 0-3 represent
+     * Write 0 to bit 4: bit0-3 represents direction btn state
+     * Write 0 to bit 5: bit0-3 represents action btn state
+     * All other bits are read only */
+    case JOYP:
+      // Clear then update select bits
       mask = 0b00110000;
-      io_reg.at(shiftedAddr) = (curVal & ~mask) | (mask & val);
+      curVal = (curVal & ~mask) | (mask & val);
+
+      // Update state bits
+      mask = 0xF0;
+      if (~BIT_GET(val, JOYP_SEL_ACTION)) {
+        curVal = (curVal & mask) | (cpu->keyvec_act & ~mask);
+      } else if (~BIT_GET(val, JOYP_SEL_DIR)) {
+        curVal = (curVal & mask) | (cpu->keyvec_dir & ~mask);
+      }
+
+      io_reg.at(shiftedAddr) = curVal;
       break;
 
     default:
