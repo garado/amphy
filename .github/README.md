@@ -6,4 +6,4 @@ Amphy is an in-progress Gameboy/Gameboy Color emulator in C++.
 
 ## Some progress so far
 
-![tetris](./tetris-title.png)
+![tetris](.img/tetris-title.png)
