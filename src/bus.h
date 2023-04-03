@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <iostream>
 #include <vector>
+#include "common.h"
 
 #ifndef BUS_H
 #define BUS_H
 
 // For MBC (CT == Cart Type)
 #define CART_TYPE 0x0147
-#define BANK_SIZE 0x2000 
+#define BANK_SIZE 0x2000
 
 #define CT_ROM_ONLY         0x00 // done
 #define CT_MBC1             0x01 // done
@@ -65,63 +66,63 @@ class Bus
   private:
     // Memory map
     // Rom bank 0. Fixed. 0000 - 3FFF
-    std::vector<uint8_t> rom_00 = std::vector<uint8_t>(16384);
+    std::vector<u8> rom_00 = std::vector<u8>(16384);
     
     // Rom bank 1. Switchable. 4000 - 7FFF
-    std::vector<uint8_t> rom_01 = std::vector<uint8_t>(16384);
+    std::vector<u8> rom_01 = std::vector<u8>(16384);
     
     // Video ram. 8000-9FFF
-    std::vector<uint8_t> vram = std::vector<uint8_t>(8192);
+    std::vector<u8> vram = std::vector<u8>(8192);
     
     // From cart. Switchable. A000 - BFFF
-    std::vector<uint8_t> ext_ram = std::vector<uint8_t>(8192);
+    std::vector<u8> ext_ram = std::vector<u8>(8192);
     
     // C000 - CFFF
-    std::vector<uint8_t> wram_0 = std::vector<uint8_t>(4096);
+    std::vector<u8> wram_0 = std::vector<u8>(4096);
     
     // D000 - DFFF
-    std::vector<uint8_t> wram_1 = std::vector<uint8_t>(4096);
+    std::vector<u8> wram_1 = std::vector<u8>(4096);
     
     // Mirror of C000-DFFF. E000-FDFF
-    std::vector<uint8_t> ech_ram = std::vector<uint8_t>(7680);
+    std::vector<u8> ech_ram = std::vector<u8>(7680);
     
     // FE00-FE9F
     // This is the CPU's copy of OAM. In the actual hardware, a
     // DMA transfer copies this data to the PPU's OAM.
-    std::vector<uint8_t> oam = std::vector<uint8_t>(160);
+    std::vector<u8> oam = std::vector<u8>(160);
     
     // IO registers FF00-FF7F
-    std::vector<uint8_t> io_reg = std::vector<uint8_t>(128);
+    std::vector<u8> io_reg = std::vector<u8>(128);
     
     // High ram. FF80-FFFE
-    std::vector<uint8_t> hram = std::vector<uint8_t>(128);
+    std::vector<u8> hram = std::vector<u8>(128);
     
     // Interrupt enable reg
-    uint8_t int_enable;
+    u8 int_enable;
 
   private:
     std::string romFname;
 
     // MBC
     bool ramEnable = false;
-    uint8_t cartType;
-    uint8_t mbcMode = ROM_MODE;
+    u8 cartType;
+    u8 mbcMode = ROM_MODE;
 
   public:
     Cpu * cpu;
 
     void Init();
-    void Write(uint16_t address, uint8_t val);
-    void Write_MMIO(uint16_t address, uint8_t val);
-    void MBC(uint16_t address, uint8_t value);
-    void SwitchBanks(uint8_t bankNum);
-    uint8_t Read(uint16_t address) const;
-    uint8_t CopyRom(std::string fname);
-    uint8_t * GetAddressPointer(uint16_t address);
+    void Write(u16 address, u8 val);
+    void Write_MMIO(u16 address, u8 val);
+    void MBC(u16 address, u8 value);
+    void SwitchBanks(u8 bankNum);
+    u8 Read(u16 address) const;
+    u8 CopyRom(std::string fname);
+    u8 * GetAddressPointer(u16 address);
 
-    uint8_t const BitTest(uint16_t address, uint8_t bit);
-    void BitSet(uint16_t address, uint8_t bit);
-    void BitClear(uint16_t address, uint8_t bit);
+    u8 const BitTest(u16 address, u8 bit);
+    void BitSet(u16 address, u8 bit);
+    void BitClear(u16 address, u8 bit);
 };
 
 #endif

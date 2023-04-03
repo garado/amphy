@@ -7,8 +7,6 @@
 
 #include <SDL2/SDL.h>
 #include <stdio.h>
-#include <iostream>
-#include <fstream>
 #include "../../common.h"
 
 // Size of SDL screen
@@ -60,7 +58,7 @@ class Display
     bool Init();
     void Close();
     void HandleEvent();
-    void DrawPixel(uint16_t x, uint16_t y, Color * c);
+    void DrawPixel(u16 x, u16 y, Color * c);
     void Render();
 };
 

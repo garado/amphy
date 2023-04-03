@@ -4,7 +4,6 @@
 
 #include <iomanip>
 #include <stdio.h>
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -25,7 +24,7 @@ void Bus::Init() {
   // io_reg.at(INTF - IO_START) = 0xE0;
 }
 
-uint8_t Bus::Read(uint16_t address) const {
+u8 Bus::Read(u16 address) const {
   // Temporary for GBDoc
   // if (address == 0xFF44) return 0x90;
 
@@ -49,6 +48,24 @@ uint8_t Bus::Read(uint16_t address) const {
     // fprintf(stderr, "Warning: Invalid memory region read: 0x%04x\n", address);
     return 0xFF;
   } else if (address < HRAM_START) {
+   
+    if (address == JOYP) {
+      if (cpu->joypSelection == JOYP_SEL_ACT_VAL) {
+        // printf("   Return act: %02X\n", (cpu->keyvec_act & 0x0F) | JOYP_SEL_ACT_VAL);
+        return cpu->keyvec_act;
+        // return 0b00001111;
+      } else if (cpu->joypSelection == JOYP_SEL_DIR_VAL) {
+        // printf("   Return dir: %02X\n", (cpu->keyvec_dir & 0x0F) | JOYP_SEL_DIR_VAL);
+        return cpu->keyvec_dir;
+        // return 0b00001010;
+      } else if (cpu->joypSelection == JOYP_SEL_BOTH_VAL) {
+        return cpu->keyvec_dir | cpu->keyvec_act;
+      } else {
+        // printf("  Returning nothing\n");
+        return 0xF0;
+      }
+    };
+
     return io_reg.at(address - IO_START);
   } else if (address < 0xFFFF) {
     return hram.at(address - HRAM_START);    
@@ -56,12 +73,10 @@ uint8_t Bus::Read(uint16_t address) const {
     return int_enable;
   }
 
-  std::cout << __PRETTY_FUNCTION__ << ": Couldn't read memory" << std::endl;
-
   return FAILURE;
 }
 
-void Bus::Write(uint16_t address, uint8_t val) {
+void Bus::Write(u16 address, u8 val) {
   if (address == TIMA && cpu->doneTMAreload) return;
 
   if (address < ROM1_START) {
@@ -81,7 +96,6 @@ void Bus::Write(uint16_t address, uint8_t val) {
   } else if (address < INVALID_START) {
     oam.at(address - OAM_START) = val;
   } else if (address < IO_START) {
-    // fprintf(stderr, "Warning: Invalid memory region write: 0x%02x to 0x%04x\n", val, address);
   } else if (address < HRAM_START) {
     Write_MMIO(address, val);
   } else if (address < 0xFFFF) {
@@ -92,9 +106,9 @@ void Bus::Write(uint16_t address, uint8_t val) {
 }
 
 /* Special handling for writing to IO registers */
-void Bus::Write_MMIO(uint16_t address, uint8_t val) {
-  uint8_t curVal = Read(address);
-  uint8_t mask;
+void Bus::Write_MMIO(u16 address, u8 val) {
+  u8 curVal = Read(address);
+  u8 mask, writeVal;
   Address shiftedAddr = address - IO_START;
 
   switch (address) {
@@ -118,19 +132,27 @@ void Bus::Write_MMIO(uint16_t address, uint8_t val) {
      * Write 0 to bit 5: bit0-3 represents action btn state
      * All other bits are read only */
     case JOYP:
-      // Clear then update select bits
-      mask = 0b00110000;
-      curVal = (curVal & ~mask) | (mask & val);
-
-      // Update state bits
-      mask = 0xF0;
-      if (~BIT_GET(val, JOYP_SEL_ACTION)) {
-        curVal = (curVal & mask) | (cpu->keyvec_act & ~mask);
-      } else if (~BIT_GET(val, JOYP_SEL_DIR)) {
-        curVal = (curVal & mask) | (cpu->keyvec_dir & ~mask);
+      if (val == JOYP_SEL_ACT_VAL) {
+        cpu->joypSelection = JOYP_SEL_ACT_VAL;
+      } else if (val == JOYP_SEL_DIR_VAL) {
+        cpu->joypSelection = JOYP_SEL_DIR_VAL;
+      } else if (val == JOYP_SEL_BOTH_VAL) {
+        cpu->joypSelection = JOYP_SEL_BOTH_VAL;
+      } else {
+        cpu->joypSelection = JOYP_SEL_NIL_VAL;
       }
 
-      io_reg.at(shiftedAddr) = curVal;
+      // io_reg.at(shiftedAddr) = writeVal;
+      break;
+
+    // a write triggers DMA transfer
+    // value is upper byte of start address
+    case DMA:
+      cpu->doDMATransfer = true;
+      cpu->dmaAddr = val << 8;
+
+      cpu->dmaByteCnt = 0;
+      io_reg.at(shiftedAddr) = val;
       break;
 
     default:
@@ -141,24 +163,24 @@ void Bus::Write_MMIO(uint16_t address, uint8_t val) {
 
 /* Bus::CopyRom
  * Copies ROM from .gb file to memory. */
-uint8_t Bus::CopyRom(std::string fname) {
+u8 Bus::CopyRom(std::string fname) {
   // Open rom for reading
   romFname = fname;
   std::ifstream infile(romFname, std::ios::binary);
   
   if (!infile.is_open()) {
-    std::cout << "ROM could not be opened" << std::endl;
+    printf("ROM could not be opened\n");
     return FAILURE;
   }
 
-  std::vector<uint8_t> const rom_(
+  std::vector<u8> const rom_(
      (std::istreambuf_iterator<char>(infile)),
      (std::istreambuf_iterator<char>()));
   infile.close();
 
   // Copy 0000-3FFF to bank 0
-  std::vector<uint8_t>::const_iterator first = rom_.begin();
-  std::vector<uint8_t>::const_iterator last = rom_.begin() + 0x3FFF;
+  std::vector<u8>::const_iterator first = rom_.begin();
+  std::vector<u8>::const_iterator last = rom_.begin() + 0x3FFF;
   rom_00.insert(rom_00.begin(), first, last);
 
   // Copy 4000-7FFF to bank 1
@@ -172,9 +194,9 @@ uint8_t Bus::CopyRom(std::string fname) {
 }
 
 /* Return a pointer to a memory value */
-uint8_t * Bus::GetAddressPointer(uint16_t address)
+u8 * Bus::GetAddressPointer(u16 address)
 {
-  std::vector <uint8_t>::iterator it;
+  std::vector <u8>::iterator it;
   if (address <= 0x3FFF) {
     it = rom_00.begin();
   } else if (address <= 0x7FFF) {
@@ -201,7 +223,7 @@ uint8_t * Bus::GetAddressPointer(uint16_t address)
   return &(*it);
 }
 
-void Bus::MBC(uint16_t addr, uint8_t value) {
+void Bus::MBC(u16 addr, u8 value) {
 
   switch (cartType) {
     case CT_ROM_ONLY: break;
@@ -216,41 +238,44 @@ void Bus::MBC(uint16_t addr, uint8_t value) {
       }
       break;
 
+    case CT_MBC3:
+      break;
+
     default: break;
   }
 }
 
-void Bus::SwitchBanks(uint8_t bankNum) {
+void Bus::SwitchBanks(u8 bankNum) {
   // Open rom for reading
   std::ifstream infile(romFname, std::ios::binary);
   
-  std::vector<uint8_t> const romfile_(
+  std::vector<u8> const romfile_(
      (std::istreambuf_iterator<char>(infile)),
      (std::istreambuf_iterator<char>()));
   infile.close();
 
-  std::vector<uint8_t>::const_iterator first = romfile_.begin();
+  std::vector<u8>::const_iterator first = romfile_.begin();
   first += (bankNum * BANK_SIZE);
 
-  std::vector<uint8_t>::const_iterator last = romfile_.begin() + 0x3FFF;
+  std::vector<u8>::const_iterator last = romfile_.begin() + 0x3FFF;
   last += (bankNum * BANK_SIZE);
 
   rom_01.insert(rom_01.begin(), first, last);
 }
 
 /* Maybe these should be moved elsewhere (utils?) */
-uint8_t const Bus::BitTest(uint16_t address, uint8_t bitpos) {
+u8 const Bus::BitTest(u16 address, u8 bitpos) {
   return (Read(address) & (1 << bitpos));
 }
 
-void Bus::BitSet(uint16_t address, uint8_t bitpos) {
-  uint8_t data = Read(address);
+void Bus::BitSet(u16 address, u8 bitpos) {
+  u8 data = Read(address);
   data |= (1 << bitpos);
   Write(address, data);
 }
 
-void Bus::BitClear(uint16_t address, uint8_t bitpos) {
-  uint8_t mask = ~(1 << bitpos);
-  uint8_t data = Read(address) & mask;
+void Bus::BitClear(u16 address, u8 bitpos) {
+  u8 mask = ~(1 << bitpos);
+  u8 data = Read(address) & mask;
   Write(address, data);
 }

@@ -4,18 +4,14 @@
 
 #include <stdint.h>
 
-typedef uint8_t u8;
-typedef uint16_t u16;
-
-typedef struct Color {
-  uint16_t r;
-  uint16_t g; 
-  uint16_t b;
-  uint16_t a;
-} Color;
-
 #define FAILURE 1
 #define SUCCESS 0
+
+#define FALSE 0
+#define TRUE !FALSE
+
+typedef uint8_t u8;
+typedef uint16_t u16;
 
 /* █▀▄▀█ ▄▀█ █▀▀ █▀█ █▀█ █▀ */
 /* █░▀░█ █▀█ █▄▄ █▀▄ █▄█ ▄█ */
@@ -31,22 +27,31 @@ typedef struct Color {
 
 /* IO registers */
 #define JOYP 0xFF00 // P1/JOYP: Joypad
-#define SERB 0xFF01 // SB: Serial byte
-#define SERC 0xFF02 // SC: Serial control
-#define DIV  0xFF04 // DIV: Clock divider
-#define TIMA 0xFF05 // TIMA: Timer value
-#define TMA  0xFF06 // TMA: Timer reload/modulo
-#define TAC  0xFF07 // TAC: Timer control
+#define JOYP_SEL_ACT_VAL 0b00010000
+#define JOYP_SEL_DIR_VAL 0b00100000
+#define JOYP_SEL_NIL_VAL 0b01100000
+#define JOYP_SEL_BOTH_VAL 0b00000000
+
+#define SERB 0xFF01 // Serial byte
+#define SERC 0xFF02 // Serial control
+#define DIV  0xFF04 // Clock divider
+#define TIMA 0xFF05 // Timer value
+#define TMA  0xFF06 // Timer reload/modulo
+#define TAC  0xFF07 // Timer control
+#define BOOT 0xFF50 // Boot ROM control
+
 
 /* Interrupts */
-#define INTF 0xFF0F // IF: Interrupt requests
+// IF: Interrupt requests
+#define INTF 0xFF0F
 #define INTF_VBLANK_IRQ 0
 #define INTF_STAT_IRQ 1
 #define INTF_TMR_IRQ 2
 #define INTF_SRL_IRQ 3
 #define INTF_JOYP_IRQ 4
 
-#define INTE 0xFFFF // IE: Interrupt enable
+// IE: Interrupt enable
+#define INTE 0xFFFF
 #define INTE_VBLANK_IE 0
 #define INTE_STAT_IE 1
 #define INTE_TMR_IE 2
@@ -79,9 +84,8 @@ typedef struct Color {
 #define NR51 0xFF25 // NR51: Audio channel mapping
 #define NR52 0xFF26 // NR52: Audio channel control
 
-// FF30 – $FF3F: Wave pattern
-
-#define LCDC 0xFF40 // LCDC: LCD control
+// LCDC: LCD control
+#define LCDC 0xFF40
 #define LCDC_EN 7
 #define LCDC_WIN_TMAP 6
 #define LCDC_WIN_EN 5
@@ -91,6 +95,7 @@ typedef struct Color {
 #define LCDC_OBJ_EN 1
 #define LCDC_BG_EN 0
 
+// STAT: LCD status
 #define STAT 0xFF41
 #define STAT_LYC_INTR_EN 6
 #define STAT_OAM_INTR_EN 5
@@ -98,18 +103,17 @@ typedef struct Color {
 #define STAT_HBLANK_INTR_EN 3
 #define STAT_LYC_FLAG 2 
 
-#define SCY  0xFF42 // SCY: Background vert. scroll
+// Misc PPU registers
+#define SCY  0xFF42 // Background vert. scroll
 #define SCX  0xFF43 // SCX: Background horiz. scroll
-#define LY   0xFF44 // LY: LCD Y coordinate
-#define LYC  0xFF45 // LYC: LCD Y compare
-#define DMA  0xFF46 // DMA: OAM DMA source address
-#define BGP  0xFF47 // BGP: Background palette
-#define OBP0 0xFF48 // OBP0: OBJ palette 0
-#define OBP1 0xFF49 // OBP1: OBJ palette 1
-#define WY   0xFF4A // WY: Window Y coord
-#define WX   0xFF4B // WX: Window X coord
-#define BOOT 0xFF50 // Boot ROM control
-
+#define LY   0xFF44 // LCD Y coordinate
+#define LYC  0xFF45 // LCD Y compare
+#define DMA  0xFF46 // OAM DMA source address
+#define BGP  0xFF47 // Background palette
+#define OBP0 0xFF48 // OBJ palette 0
+#define OBP1 0xFF49 // OBJ palette 1
+#define WY   0xFF4A // Window Y coord
+#define WX   0xFF4B // Window X coord
 
 /* █▄▀ █▀▀ █▄█ █▀ */
 /* █░█ ██▄ ░█░ ▄█ */
@@ -125,5 +129,16 @@ enum Keys {
   KEY_UP_SEL,
   KEY_DW_START,
 };
+
+
+/* █▀▀ █▀█ ▄▀█ █▀█ █░█ █ █▀▀ █▀ */
+/* █▄█ █▀▄ █▀█ █▀▀ █▀█ █ █▄▄ ▄█ */
+
+typedef struct Color {
+  u16 r;
+  u16 g; 
+  u16 b;
+  u16 a;
+} Color;
 
 #endif

@@ -16,9 +16,9 @@ void Cpu::LD_atNN_SP() {
  * Halt CPU and LCD until button pressed.
  * Follows Pandocs STOP flowchart */
 void Cpu::STOP() {
-  uint8_t ie = MemReadRaw(INTE);
-  uint8_t irq = MemReadRaw(INTF);
-  uint8_t intrPending = ie & irq;
+  u8 ie = MemReadRaw(INTE);
+  u8 irq = MemReadRaw(INTF);
+  u8 intrPending = ie & irq;
 
   bus->Write(DIV, 0);
   cpuState = CPU_STOP;
@@ -46,9 +46,9 @@ void Cpu::JR_cc_s8(Flag * f, bool cond) {
 
 /* 01 11 21 31: LD rp, d16 
  * Load 2 bytes of immediate data into register pair. */
-void Cpu::LD_rp_NN(uint8_t p) {
-  uint8_t lsb = MemRead_u8(&pc);
-  uint8_t msb = MemRead_u8(&pc);
+void Cpu::LD_rp_NN(u8 p) {
+  u8 lsb = MemRead_u8(&pc);
+  u8 msb = MemRead_u8(&pc);
 
   switch (p) {
     case 0: b = msb; c = lsb; break;
@@ -60,8 +60,8 @@ void Cpu::LD_rp_NN(uint8_t p) {
 }
 
 /* 09 19 29 39: ADD HL, rp */
-void Cpu::ADD_HL_rp(uint8_t p) {
-  uint16_t rp;
+void Cpu::ADD_HL_rp(u8 p) {
+  u16 rp;
   switch (p) {
     case 0: rp = bc(); break;
     case 1: rp = de(); break;
@@ -75,7 +75,7 @@ void Cpu::ADD_HL_rp(uint8_t p) {
   SetFlags_16bitAdd_C(rp, hl());
   SetFlags_16bitAdd_HC(rp, hl());
 
-  uint16_t sum = hl() + rp;
+  u16 sum = hl() + rp;
   h = sum >> 8;
   l = sum & 0xFF;
 }
@@ -136,9 +136,9 @@ void Cpu::LD_A_atHLd() {
 }
 
 /* 03 13 23 33: INC rp */
-void Cpu::INC_rp(uint8_t p) {
+void Cpu::INC_rp(u8 p) {
   Tick(ALU_CYCLES);
-  uint16_t rp;
+  u16 rp;
   switch(p) {
     case 0: 
       rp = bc();
@@ -160,9 +160,9 @@ void Cpu::INC_rp(uint8_t p) {
 }
 
 /* 0B 1B 2B 3B: INC rp */
-void Cpu::DEC_rp(uint8_t p) {
+void Cpu::DEC_rp(u8 p) {
   Tick(ALU_CYCLES);
-  uint16_t rp;
+  u16 rp;
   switch(p) {
     case 0: 
       rp = bc();
@@ -188,7 +188,7 @@ void Cpu::INC_r(Register * x) {
   // (HL) handled manually
   if (x == NULL) {
     Address addr = hl();
-    uint8_t val = MemRead_u8(&addr);
+    u8 val = MemRead_u8(&addr);
     SetFlags_8bitAdd_HC(val, 1);
     val++;
     f.N = false;
@@ -209,7 +209,7 @@ void Cpu::DEC_r(Register * x) {
   // (HL) handled manually
   if (x == NULL) {
     Address addr = hl();
-    uint8_t val = MemRead_u8(&addr);
+    u8 val = MemRead_u8(&addr);
     addr = hl();
     MemWrite_u8(&addr, val - 1);
 
@@ -228,7 +228,7 @@ void Cpu::DEC_r(Register * x) {
 /* 06 0E 16 1E 26 2E 36 3E: LD r, d8
  * Load 8-bit immediate operand d8 into register R. */
 void Cpu::LD_r_d8(Register * x) {
-  uint8_t d8 = MemRead_u8(&pc);
+  u8 d8 = MemRead_u8(&pc);
 
   // (HL) handled separately
   // Store d8 into address (HL)
@@ -246,7 +246,7 @@ void Cpu::LD_r_d8(Register * x) {
  * The contents of bit 7 are placed in both the CY
  * flag and bit 0 of register A. */
 void Cpu::RLCA() {
-  uint8_t oldbit7 = a >> 7;
+  u8 oldbit7 = a >> 7;
   a <<= 1;
   a |= oldbit7;
 
@@ -261,11 +261,11 @@ void Cpu::RLCA() {
  * Adjusts accumulator to correct BCD representation.
  * Sets carry flag if result > 0x99. */
 void Cpu::DAA() {
-  uint16_t correction = 0; 
+  u16 correction = 0; 
   
-  uint8_t HC = f.HC;
-  uint8_t C = f.C;
-  uint8_t N = f.N;
+  u8 HC = f.HC;
+  u8 C = f.C;
+  u8 N = f.N;
   
   if (HC || (!N && ((a & 0xF) > 0x9))) {
     correction |= 0x6;
@@ -285,7 +285,7 @@ void Cpu::DAA() {
 /* 0F: RRCA
  * Rotate A right. Old bit 0 to CY and bit 7 of A. */
 void Cpu::RRCA() {
-  uint8_t oldbit0 = a & 0x1;
+  u8 oldbit0 = a & 0x1;
   a >>= 1;
   a |= (oldbit0 << 7);
 
@@ -308,8 +308,8 @@ void Cpu::CPL() {
  * Then rotate that left. Old CY gets copied to bit 0.
  * Old bit 8 of A is discarded. */
 void Cpu::RLA() {
-  uint8_t oldCy = f.C;
-  uint8_t oldbit7 = a >> 7;
+  u8 oldCy = f.C;
+  u8 oldbit7 = a >> 7;
   a <<= 1;
   a |= oldCy;
 
@@ -332,8 +332,8 @@ void Cpu::SCF() {
  * Then rotate that right. Old CY gets copied to bit 7.
  * Old bit 0 of A is discarded. */
 void Cpu::RRA() {
-  uint8_t oldCy = f.C;
-  uint8_t oldbit0 = a & 0x1;
+  u8 oldCy = f.C;
+  u8 oldbit0 = a & 0x1;
   a >>= 1;
   a |= (oldCy << 7);
 
@@ -390,7 +390,7 @@ void Cpu::HALT() {
 
 /* Operate on acc and register/memory location */
 void Cpu::ALU_r(DT_ALU_Type aluType, Register * r) {
-  uint8_t reg;
+  u8 reg;
   if (r == NULL) {
     Address addr = hl();
     reg = MemRead_u8(&addr);
@@ -411,10 +411,10 @@ void Cpu::ALU_r(DT_ALU_Type aluType, Register * r) {
     // for adding only 2 numbers
     f.N = 0;
 
-    uint16_t hc_sum = (a & 0xF) + (reg & 0xF) + (f.C & 0xF);
+    u16 hc_sum = (a & 0xF) + (reg & 0xF) + (f.C & 0xF);
     f.HC = hc_sum > 0xF;
 
-    uint16_t sum = a + reg + f.C;
+    u16 sum = a + reg + f.C;
     f.C = sum > 0xFF;
 
     a = sum & 0xFF;
@@ -433,10 +433,10 @@ void Cpu::ALU_r(DT_ALU_Type aluType, Register * r) {
     // for subtracting only 2 numbers
     f.N = true;
 
-    uint16_t hc_diff = (a & 0xF) - ((reg & 0xF) + f.C);
+    u16 hc_diff = (a & 0xF) - ((reg & 0xF) + f.C);
     f.HC = hc_diff & 0x10;
 
-    uint16_t diff = a - (reg + f.C);
+    u16 diff = a - (reg + f.C);
     f.C = diff > 0xFF;
 
     a = diff & 0xFF;
@@ -476,9 +476,9 @@ void Cpu::ALU_r(DT_ALU_Type aluType, Register * r) {
  * If flag is set, return from function. */
 void Cpu::RET_cc(Flag * flag, bool cond) {
   if (*flag == cond) {
-    uint8_t lsb = MemRead_u8(&sp);
+    u8 lsb = MemRead_u8(&sp);
     Tick(ALU_CYCLES);
-    uint8_t msb = MemRead_u8(&sp);
+    u8 msb = MemRead_u8(&sp);
     Tick(ALU_CYCLES);
     pc = (msb << 8) | lsb;
   } else {
@@ -490,7 +490,7 @@ void Cpu::RET_cc(Flag * flag, bool cond) {
 /* E0: LD (FF00 + a8), A
  * Store contents of Reg A into (FF00 + a8) */
 void Cpu::LD_a8_A() {
-  uint8_t a8 = MemRead_u8(&pc);
+  u8 a8 = MemRead_u8(&pc);
   Address addr = 0xFF00 + a8;
   MemWrite_u8(&addr, a);
 }
@@ -502,10 +502,10 @@ void Cpu::LD_a8_A() {
 void Cpu::ADD_SP_s8() {
   int8_t i8 = MemRead_u8(&pc);
 
-  uint16_t hc_sum = (sp & 0xF) + (i8 & 0xF);
+  u16 hc_sum = (sp & 0xF) + (i8 & 0xF);
   f.HC = (hc_sum & 0x10) == 0x10;
 
-  uint16_t c_sum = (sp & 0xFF) + (i8 & 0xFF);
+  u16 c_sum = (sp & 0xFF) + (i8 & 0xFF);
   f.C = (c_sum & 0x100) == 0x100;
   sp += i8;
 
@@ -523,10 +523,10 @@ void Cpu::LD_A_a8() {
 void Cpu::LD_HL_SPs8() {
   int8_t i8 = MemRead_u8(&pc);
 
-  uint16_t hc_sum = (sp & 0xF) + (i8 & 0xF);
+  u16 hc_sum = (sp & 0xF) + (i8 & 0xF);
   f.HC = (hc_sum & 0x10) == 0x10;
 
-  uint16_t c_sum = (sp & 0xFF) + (i8 & 0xFF);
+  u16 c_sum = (sp & 0xFF) + (i8 & 0xFF);
   f.C = (c_sum & 0x100) == 0x100;
 
   f.Z = 0;
@@ -536,8 +536,8 @@ void Cpu::LD_HL_SPs8() {
 }
 
 /* C1 D1 E1 F1: POP rp2 */
-void Cpu::POP_rp2(uint8_t p) {
-  uint16_t val = MemRead_u16(&sp);
+void Cpu::POP_rp2(u8 p) {
+  u16 val = MemRead_u16(&sp);
 
   switch (p) {
     case 0: bc(val); break;
@@ -560,7 +560,7 @@ void Cpu::RET() {
 void Cpu::RETI() {
   ime = prevIme;
   pc = MemRead_u16(&sp);
-  bus->Write(INTF, 0);
+  bus->Write(INTF, 0); // TODO VERY BAD FIX LATER
   Tick(ALU_CYCLES);
 }
 
@@ -577,7 +577,7 @@ void Cpu::LD_SP_HL() {
 
 /* C2 CA D2 DA: JP cc d16 */
 void Cpu::JP_cc_d16(Flag * cc, bool cond) {
-  uint16_t newPc = MemRead_u16(&pc);
+  u16 newPc = MemRead_u16(&pc);
   if (*cc == cond) {
     pc = newPc;
     Tick(ALU_CYCLES);
@@ -628,7 +628,7 @@ void Cpu::DI() {
 
 /* C4 CC D4 DC CALL cc, a16 */
 void Cpu::CALL_cc_a16(Flag * cc, bool cond) {
-  uint16_t newPc = MemRead_u16(&pc);
+  u16 newPc = MemRead_u16(&pc);
   if (*cc == cond) {
     Push_u16(pc);
     pc = newPc;
@@ -637,7 +637,7 @@ void Cpu::CALL_cc_a16(Flag * cc, bool cond) {
 }
 
 /* C5 D5 E5 F5 PUSH rp2 */
-void Cpu::PUSH_rp2(uint8_t p) {
+void Cpu::PUSH_rp2(u8 p) {
   switch (p) {
     case 0: Push_u16(bc()); break;
     case 1: Push_u16(de()); break;
@@ -657,7 +657,7 @@ void Cpu::CALL_a16() {
 
 /* C6 CE D6 DE E6 EE F6 FE ALU n */
 void Cpu::ALU_n(DT_ALU_Type aluType) {
-  uint8_t d8 = MemRead_u8(&pc);
+  u8 d8 = MemRead_u8(&pc);
   ALU_r(aluType, &d8);
 }
 
@@ -680,7 +680,7 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
 
   // Rotate left
   if (rot == DT_RLC) {
-    uint8_t oldbit7 = *x >> 7;
+    u8 oldbit7 = *x >> 7;
     *x <<= 1;
     *x |= oldbit7;
     f.C = oldbit7;
@@ -691,7 +691,7 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
 
   // Rotate right
   else if (rot == DT_RRC) {
-    uint8_t oldbit0 = *x & 0x1;
+    u8 oldbit0 = *x & 0x1;
     *x >>= 1;
     *x |= oldbit0 << 7;
     f.C = oldbit0;
@@ -702,7 +702,7 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
 
   // Rotate left
   else if (rot == DT_RL) {
-    uint8_t oldbit7 = *x >> 7;
+    u8 oldbit7 = *x >> 7;
     *x <<= 1;
     *x |= f.C;
 
@@ -714,7 +714,7 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
 
   // Rotate right
   else if (rot == DT_RR) {
-    uint8_t oldbit0 = *x & 0x1;
+    u8 oldbit0 = *x & 0x1;
     *x >>= 1;
     *x |= f.C << 7;
     f.C = oldbit0;
@@ -724,7 +724,7 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
   }
 
   else if (rot == DT_SLA) {
-    uint8_t bit7 = *x >> 7;
+    u8 bit7 = *x >> 7;
     f.C = bit7;
     *x <<= 1;
     *x &= 0xFE;
@@ -735,7 +735,7 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
   }
 
   else if (rot == DT_SRA) {
-    uint8_t oldbit7 = *x >> 7;
+    u8 oldbit7 = *x >> 7;
     f.C = *x & 0x1;
     *x >>= 1;
     *x |= (oldbit7 << 7);
@@ -746,7 +746,7 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
   }
 
   else if (rot == DT_SWAP) {
-    uint8_t old_lower4 = *x << 4;
+    u8 old_lower4 = *x << 4;
     *x >>= 4; // move upper 4 to lower 4
     *x |= old_lower4;
 
@@ -757,7 +757,7 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
   }
 
   else if (rot == DT_SRL) {
-    uint8_t oldbit0 = *x & 0x1;
+    u8 oldbit0 = *x & 0x1;
     f.C = oldbit0;
     *x >>= 1;
     *x &= 0x7F;
@@ -769,39 +769,39 @@ void Cpu::ROT_y_z(DT_Rot_Type rot, Register * x) {
   }
 }
 
-void Cpu::BIT_y_r(uint8_t n, Register * x) {
+void Cpu::BIT_y_r(u8 n, Register * x) {
   if (x == NULL) {
     Address addr = hl();
     x = bus->GetAddressPointer(hl());
   }
 
-  uint8_t val = (*x >> n) & 0x1;
+  u8 val = (*x >> n) & 0x1;
   f.Z = !val;
   f.N = 0;
   f.HC = 1;
 }
 
 /* Reset bit n of register x */
-void Cpu::RES_y_r(uint8_t n, Register * x) {
+void Cpu::RES_y_r(u8 n, Register * x) {
   if (x == NULL) {
     Tick(MEM_RW_CYCLES);
     x = bus->GetAddressPointer(hl());
   }
     
-  uint8_t mask = (0xFF ^ (0x1 << n));
+  u8 mask = (0xFF ^ (0x1 << n));
   *x &= mask;
 
   if (x == NULL) Tick(MEM_RW_CYCLES);
 }
 
 /* Reset bit y of register x */
-void Cpu::SET_y_r(uint8_t n, Register * x) {
+void Cpu::SET_y_r(u8 n, Register * x) {
   if (x == NULL) {
     Tick(MEM_RW_CYCLES);
     x = bus->GetAddressPointer(hl());
   }
   
-  uint8_t mask = 0x1 << n;
+  u8 mask = 0x1 << n;
   *x |= mask;
 
   if (x == NULL) Tick(MEM_RW_CYCLES);

@@ -1,7 +1,5 @@
 
 #include <stdio.h>
-#include <iostream>
-#include <iomanip>
 
 #include "common.h"
 #include "platform/platform.h"
@@ -40,12 +38,12 @@ int main( int argc, char* argv[] )
   if (argc > 1) {
     bus_status = bus->CopyRom(argv[argc-1]);
   } else {
-    std::cout << "No ROM provided! Exiting :(" << std::endl;
+    printf("No ROM provided! Exiting :(\n");
     return EXIT_SUCCESS;
   }
 
   if (bus_status == FAILURE) {
-    std::cout << "Exiting :(" << std::endl;
+    printf("Exiting :(\n");
     return EXIT_FAILURE;
   }
 

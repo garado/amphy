@@ -1,9 +1,13 @@
 
+/* █▀▀ █▀█ █░█ */
+/* █▄▄ █▀▀ █▄█ */
+
 #include "common.h"
 #include "debug.h"
 #include "cpu.h"
 #include "ppu.h"
 #include "bus.h"
+
 #include <cstdio>
 
 void Cpu::Init() {
@@ -37,8 +41,8 @@ void Cpu::Execute() {
       break;
 
     case CPU_HALT_IME_NOT_SET:
-      Tick(NOP_CYCLES);
       if (gbdoc || step) debugger->Regdump();
+      Tick(NOP_CYCLES);
       break;
 
     // Byte after halt is read twice
@@ -84,7 +88,7 @@ void Cpu::RunInstruction() {
  * The lower 4 bits of argument should be 0s.
  * The upper 4 bits are the Z, N, HC, and C
  * flags (from msb to lsb). */
-void Cpu::SetFlags(uint8_t flags) {
+void Cpu::SetFlags(u8 flags) {
   flags >>= 4;
   f.C  = flags & 0x1;
   f.HC = (flags >> 1) & 1;
@@ -104,7 +108,7 @@ void Cpu::SetFlags(bool z, bool n, bool hc, bool c) {
  *    The lower 4 bits are 0.
  *    The upper 4 bits are the Z, N, HC, and C flags 
  *    (from msb to lsb). */
-uint8_t const Cpu::GetFlagsAsInt()
+u8 const Cpu::GetFlagsAsInt()
 {
   return (f.Z << 7) | (f.N << 6) | (f.HC << 5) | (f.C << 4);
 }
@@ -114,53 +118,64 @@ uint8_t const Cpu::GetFlagsAsInt()
 
 /* @Function Cpu::Tick
  * @brief Ticks all other subsystems. */
-void Cpu::Tick(uint8_t cycles)
-{
+void Cpu::Tick(u8 cycles) {
   RunTimer(cycles);
   ppu->Execute(cycles);
+
+  if (doDMATransfer) DMA_Transfer();
+}
+
+/* @Function Cpu::DMA_Transfer 
+ * @brief Called from Tick() function . Emulates DMA transfer 
+*   of sprite data from WRAM to OAM. */
+void Cpu::DMA_Transfer() {
+  u8 val = bus->Read(dmaAddr++);
+  // printf("dma transfer: %02X\n", val);
+  bus->Write(OAM_START + dmaByteCnt++, val);
+  if (dmaByteCnt == 160) doDMATransfer = false;
 }
 
 /* Memory read/write wrappers.
  * To get more accurate instruction timing, ticks PPU
  * on every memory read/write. Also increments the address
  * to be read/written from. */
-uint8_t Cpu::MemReadRaw(Address addr)
+u8 Cpu::MemReadRaw(Address addr)
 {
   return bus->Read(addr);
 }
 
-uint8_t Cpu::MemRead_u8(Address * addr)
+u8 Cpu::MemRead_u8(Address * addr)
 {
-  uint8_t val = MemReadRaw((*addr)++);
+  u8 val = MemReadRaw((*addr)++);
   Tick(MEM_RW_CYCLES);
   return val;
 }
 
-uint16_t Cpu::MemRead_u16(Address * addr)
+u16 Cpu::MemRead_u16(Address * addr)
 {
-  uint8_t lsb = MemReadRaw((*addr)++);
-  uint8_t msb = MemReadRaw((*addr)++);
+  u8 lsb = MemReadRaw((*addr)++);
+  u8 msb = MemReadRaw((*addr)++);
   return (msb << 8) | lsb;
 }
 
-void Cpu::MemWriteRaw(Address addr, uint8_t value)
+void Cpu::MemWriteRaw(Address addr, u8 value)
 {
   bus->Write(addr, value);
 }
 
-void Cpu::MemWrite_u8(Address * addr, uint8_t value)
+void Cpu::MemWrite_u8(Address * addr, u8 value)
 {
   MemWriteRaw((*addr)++, value);
   Tick(MEM_RW_CYCLES);
 }
 
-void Cpu::MemWrite_u16(Address * addr, uint16_t value)
+void Cpu::MemWrite_u16(Address * addr, u16 value)
 {
   MemWrite_u8(addr, value & 0xFF);
   MemWrite_u8(addr, value >> 8);
 }
 
-void Cpu::Push_u8(uint8_t value)
+void Cpu::Push_u8(u8 value)
 {
   --sp;
   Tick(ALU_CYCLES);
@@ -168,7 +183,7 @@ void Cpu::Push_u8(uint8_t value)
   Tick(MEM_RW_CYCLES);
 }
 
-void Cpu::Push_u16(uint16_t value)
+void Cpu::Push_u16(u16 value)
 {
   Push_u8(value >> 8);
   Push_u8(value & 0xFF);
@@ -179,52 +194,52 @@ void Cpu::Push_u16(uint16_t value)
 
 /* ADDITION */
 /* C set for 16-bit addition when there is ovflw out of 16th bit. */
-void Cpu::SetFlags_16bitAdd_C(uint16_t x, uint16_t y)
+void Cpu::SetFlags_16bitAdd_C(u16 x, u16 y)
 {
   f.C = ((uint32_t) x + (uint32_t) y) > 0xFFFF;
 }
 
 /* HC set for 16-bit addition on carry from bit 11 to 12. */
-void Cpu::SetFlags_16bitAdd_HC(uint16_t x, uint16_t y)
+void Cpu::SetFlags_16bitAdd_HC(u16 x, u16 y)
 {
-  uint16_t sum = (x & 0xFFF) + (y & 0xFFF);
+  u16 sum = (x & 0xFFF) + (y & 0xFFF);
   f.HC = (sum & 0x1000) == 0x1000;
 }
 
 /* 8bit C set when addition overflows out of the 4th bit */
-void Cpu::SetFlags_8bitAdd_C(uint8_t x, uint8_t y)
+void Cpu::SetFlags_8bitAdd_C(u8 x, u8 y)
 {
   f.C = (int) (x + y) > 0xFF;
 }
 
 /* 8bit HC set on carry from 3rd to 4th bit. */
-void Cpu::SetFlags_8bitAdd_HC(uint8_t x, uint8_t y)
+void Cpu::SetFlags_8bitAdd_HC(u8 x, u8 y)
 {
-  uint16_t sum = (x & 0xF) + (y & 0xF);
+  u16 sum = (x & 0xF) + (y & 0xF);
   f.HC = (sum & 0x10) == 0x10;
 }
 
 /* SUBTRACTION */
 /* C set for 16bit sub when a borrow is required from the MSB. */
-void Cpu::SetFlags_16bitSub_C(uint16_t x, uint16_t y)
+void Cpu::SetFlags_16bitSub_C(u16 x, u16 y)
 {
   f.C = x > y;
 }
 
 /* HC set for 16bit sub when TODO */
-void Cpu::SetFlags_16bitSub_HC(uint16_t x, uint16_t y)
+void Cpu::SetFlags_16bitSub_HC(u16 x, u16 y)
 {
   f.C = (x & 0xF) + (y & 0xF) > 0xF;
 }
 
 /* C set for 8bit sub when TODO */
-void Cpu::SetFlags_8bitSub_C(uint8_t x, uint8_t y)
+void Cpu::SetFlags_8bitSub_C(u8 x, u8 y)
 {
   f.C = (int) (x - y) < 0;
 }
 
 /* HC for 8bit sub set when TODO */
-void Cpu::SetFlags_8bitSub_HC(uint8_t x, uint8_t y)
+void Cpu::SetFlags_8bitSub_HC(u8 x, u8 y)
 {
   f.HC = ((x & 0xF) - (y & 0xF)) & 0x10;
 }
@@ -239,11 +254,11 @@ void Cpu::SetFlags_8bitSub_HC(uint8_t x, uint8_t y)
  * https://gb-archive.github.io/salvage/decoding_gbz80_opcodes/Decoding%20Gamboy%20Z80%20Opcodes.html */
 void Cpu::Decode8BitOpcode()
 {
-  uint8_t x = op >> 6;            // Bit 6-7
-  uint8_t y = (op >> 3) & 0b111;  // Bit 3-5
-  uint8_t z = op & 0b111;         // Bit 0-2
-  uint8_t p = y >> 1;   // Bit 4-5
-  uint8_t q = y & 0b1;  // Bit 3
+  u8 x = op >> 6;            // Bit 6-7
+  u8 y = (op >> 3) & 0b111;  // Bit 3-5
+  u8 z = op & 0b111;         // Bit 0-2
+  u8 p = y >> 1;   // Bit 4-5
+  u8 q = y & 0b1;  // Bit 3
 
   if (x == 0) {
 
@@ -414,11 +429,11 @@ void Cpu::Decode16BitOpcode()
 {
   op = MemRead_u8(&pc);
 
-  uint8_t x = op >> 6;            // Bit 6-7
-  uint8_t y = (op >> 3) & 0b111;  // Bit 3-5
-  uint8_t z = op & 0b111;         // Bit 0-2
-  uint8_t p = y >> 1;   // Bit 4-5
-  uint8_t q = y & 0b1;  // Bit 3
+  u8 x = op >> 6;            // Bit 6-7
+  u8 y = (op >> 3) & 0b111;  // Bit 3-5
+  u8 z = op & 0b111;         // Bit 0-2
+  u8 p = y >> 1;   // Bit 4-5
+  u8 q = y & 0b1;  // Bit 3
 
   // Roll/shift register or mem location
   if (x == 0) ROT_y_z(DT_rot[y], DT_r[z]);
@@ -435,10 +450,10 @@ void Cpu::Decode16BitOpcode()
  *      - the IME flag must be set */
 void Cpu::HandleInterrupt()
 {
-  uint8_t ie = MemReadRaw(INTE);
-  uint8_t irq = MemReadRaw(INTF);
+  u8 ie = MemReadRaw(INTE);
+  u8 irq = MemReadRaw(INTF);
   
-  uint8_t intrPending = ie & irq;
+  u8 intrPending = ie & irq;
 
   // Do nothing if no interrupts pending
   if (!intrPending) return;
@@ -458,9 +473,9 @@ void Cpu::HandleInterrupt()
 
   if (!ime) return;
 
-  for (uint8_t i = 0; i < INTR_TYPES; ++i) {
-    uint8_t ieCurr  = BIT_TEST(ie, Intr_Bits[i]);
-    uint8_t irqCurr = BIT_TEST(irq, Intr_Bits[i]);
+  for (u8 i = 0; i < INTR_TYPES; ++i) {
+    u8 ieCurr  = BIT_TEST(ie, Intr_Bits[i]);
+    u8 irqCurr = BIT_TEST(irq, Intr_Bits[i]);
 
     if (ieCurr & irqCurr) {
       Push_u16(pc);
@@ -481,16 +496,16 @@ void Cpu::HandleInterrupt()
  * is then called when there is an instruction with a memory
  * read/write or alu op). when cpu is halted, this is called
  * manually. */
-void Cpu::RunTimer(uint8_t cycles)
+void Cpu::RunTimer(u8 cycles)
 {
-  uint16_t old_sysclk = sysclk;
+  u16 old_sysclk = sysclk;
   sysclk += cycles;
   *divPtr = sysclk >> 8;
 
   // TIMA is incremented at the frequency specified by TAC.
   // When the value > 0xFF (overflows), it is reset to the value
   // specified in TMA and an interrupt is requested.
-  uint8_t tac = bus->Read(TAC);
+  u8 tac = bus->Read(TAC);
 
   // Don't do anything if timer not enabled
   if (!TAC_ENABLE_MASK(tac)) return;
@@ -501,7 +516,7 @@ void Cpu::RunTimer(uint8_t cycles)
   if (doTMAreload) {
     tmaReload -= cycles;
     if (tmaReload == 0) {
-      uint8_t tma = bus->Read(TMA);
+      u8 tma = bus->Read(TMA);
       bus->Write(TIMA, tma);
       doTMAreload = false;
 
@@ -515,8 +530,8 @@ void Cpu::RunTimer(uint8_t cycles)
   // 1024 clock cycles. log_2(1024) = 10. We can tell if 1024
   // cycles have passed by checking if the 10th bit of sysclk
   // changes state.
-  uint8_t tac_select = TAC_SELECT_MASK(tac);
-  uint16_t tac_mask = 0;
+  u8 tac_select = TAC_SELECT_MASK(tac);
+  u16 tac_mask = 0;
   switch(tac_select){
     case TAC_1024:  tac_mask = 0x400; break;
     case TAC_16:    tac_mask = 0x10;  break;
@@ -528,7 +543,7 @@ void Cpu::RunTimer(uint8_t cycles)
   // XOR returns 1 if bits are different (state change). Then
   // we mask with tac_mask to check if a specific bit changes state.
   if ((old_sysclk ^ sysclk) & tac_mask) {
-    uint8_t tima = bus->Read(TIMA);
+    u8 tima = bus->Read(TIMA);
 
     // Request interrupt and reset TIMA to value in TMA if
     // overflow occurs. Increment normally otherwise.
@@ -564,25 +579,22 @@ static const char* key_str[4] {
  * @brief 0 == pressed, so clear bit from corresponding key vector
  *    Also set interrupt flag when necessary */
 void Cpu::Key_Down(KeyType type, Keys key) {
-  uint8_t * vec = (type == KEYTYPE_DIR) ? &keyvec_dir : &keyvec_act;
+  u8 * vec = (type == KEYTYPE_DIR) ? &keyvec_dir : &keyvec_act;
 
   printf("Cpu: Key_Down: %s %s\n", keytype_str[type], key_str[key]);
 
   // Interrupt on high to low if corresponding keytype bit is selected
-  uint8_t selBit, curType;
-  selBit  = ~BIT_GET(*joypPtr, JOYP_SEL_ACTION);
-  curType = (selBit) ? KEYTYPE_ACT : KEYTYPE_DIR;
+  u8 selBit, curType;
+  selBit  = BIT_TEST(*joypPtr, JOYP_SEL_ACTION);
 
-  // If this is the currently selected vector:
-  // Set interrupts and update joyp
-  // Note: 0 == selected
-  if (curType == type) {
-    *joypPtr &= 0xF0;
-    *joypPtr |= *vec;
+  if (selBit == JOYP_SEL_ACT_VAL) {
+    curType = KEYTYPE_ACT;
+  } else if (selBit == JOYP_SEL_DIR_VAL) {
+    curType = KEYTYPE_DIR;
+  }
 
-    if (BIT_GET(*vec, key) != 0) {
-      *intf = BIT_SET(*intf, INTF_JOYP_IRQ);
-    }
+  if (curType == type && BIT_GET(*vec, key) != 0) {
+    *intf = BIT_SET(*intf, INTF_JOYP_IRQ);
   }
 
   *vec = BIT_CLEAR(*vec, key);
@@ -592,17 +604,6 @@ void Cpu::Key_Down(KeyType type, Keys key) {
  * @param type keytype_dir or keytype_act
  * @param key  number 0-3 indicating key type and also bit position */
 void Cpu::Key_Up(KeyType type, Keys key) {
-  uint8_t * vec = (type == KEYTYPE_DIR) ? &keyvec_dir : &keyvec_act;
+  u8 * vec = (type == KEYTYPE_DIR) ? &keyvec_dir : &keyvec_act;
   *vec = BIT_SET(*vec, key);
-
-  // If this is the currently selected vector, update joyp
-  // Note: 0 == selected
-  uint8_t selBit, curType;
-  selBit  = ~BIT_GET(*joypPtr, JOYP_SEL_ACTION);
-  curType = (selBit) ? KEYTYPE_ACT : KEYTYPE_DIR;
-
-  if (curType == type) {
-    *joypPtr &= 0xF0;
-    *joypPtr |= *vec;
-  }
 }

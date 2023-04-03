@@ -1,7 +1,6 @@
 
 #include <SDL2/SDL.h>
 #include <stdio.h>
-#include <iostream>
 #include <fstream>
 
 #include "display.h"
@@ -86,25 +85,20 @@ void Display::ApplyImg() {
 }
 
 /* @Function Display::RenderPixel()
- * @param x x-coordinate of Gameboy
- * @param y y-coordinate of Gameboy
- * @param color color of pixel
  * @brief Renders a pixel to the screen. */
-void Display::DrawPixel(uint16_t x, uint16_t y, Color * c) {
+void Display::DrawPixel(u16 x, u16 y, Color * c) {
   SDL_SetRenderDrawColor(renderer, c->r, c->g, c->b, 0xFF);
   SDL_RenderDrawPoint(renderer, x, y); 
 }
 
-void Display::Render()
-{
+void Display::Render() {
   SDL_RenderPresent(renderer);
 }
 
-/* @Function Display::HandleEvent
- * @brief Handles SDL events. */
+/* @Function Display::HandleEvent */
 void Display::HandleEvent() {
   while (SDL_PollEvent(&e) != 0) {
-    uint8_t key, keyType;
+    u8 key, keyType;
 
     if (e.type == SDL_QUIT) {
       amphy_quit = true;

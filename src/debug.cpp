@@ -3,8 +3,6 @@
 /* █▄▀ ██▄ █▄█ █▄█ █▄█    █▄█ ░█░ █ █▄▄ ▄█ */ 
 
 #include <stdio.h>
-#include <iostream>
-#include <iomanip>
 
 #include "debug.h"
 #include "cpu.h"

@@ -6,7 +6,6 @@
 #define CPU_H
 
 #include <stdio.h>
-#include <iostream>
 #include <array>
 #include <fstream>
 #include <vector>
@@ -37,8 +36,7 @@
 #define INTR_TMR 2
 #define INTR_SRL 3
 #define INTR_JOYP 4
-
-const uint8_t Intr_Bits[5] = {
+const u8 Intr_Bits[5] = {
   INTR_VBLNK,
   INTR_STAT,
   INTR_TMR,
@@ -52,7 +50,7 @@ const uint8_t Intr_Bits[5] = {
 #define ISR_ADDR_SRL 0x58
 #define ISR_ADDR_JOYP 0x60
 
-const uint8_t Intr_Addr[5] = {
+const u8 Intr_Addr[5] = {
   ISR_ADDR_VBLANK,
   ISR_ADDR_STAT,
   ISR_ADDR_TMR,
@@ -108,24 +106,23 @@ static const char* Cpu_StatesStr[7] = {
   "CPU_STOP",
 };
 
-typedef uint16_t Address;
-typedef uint8_t Register;
+typedef u16 Address;
+typedef u8 Register;
 typedef bool Flag;
 
 class Bus;
 class Ppu;
 class Debugger;
 
-class Cpu
-{
+class Cpu {
   private:
-    uint8_t a = 0x01;
-    uint8_t b = 0xFF;
-    uint8_t c = 0x13;
-    uint8_t d = 0x00;
-    uint8_t e = 0xC1;
-    uint8_t h = 0x84;
-    uint8_t l = 0x03;
+    u8 a = 0x01;
+    u8 b = 0xFF;
+    u8 c = 0x13;
+    u8 d = 0x00;
+    u8 e = 0xC1;
+    u8 h = 0x84;
+    u8 l = 0x03;
 
     struct f {
       bool Z = false;  // Zero
@@ -134,78 +131,79 @@ class Cpu
       bool C = false;  // Carry
     } f;
 
-    uint8_t op = 0x00;
-    uint16_t sysclk = 0x00;
-    uint16_t sp = 0xFFFE;
-    uint16_t pc = 0x0100;
+    u8 op = 0x00;
+    u16 sysclk = 0x00;
+    u16 sp = 0xFFFE;
+    u16 pc = 0x0100;
 
     bool ime = true;
     bool prevIme = true;
-    uint8_t prevIntrState = 0;
+    u8 prevIntrState = 0;
 
     Cpu_States cpuState = CPU_NORMAL;
 
   // Pointers to commonly used stuff
   // figured it might be faster than a whole call to bus->read
   private:
-    uint8_t * divPtr;
-    uint8_t * joypPtr;
-    uint8_t * intf;
-    uint8_t * inte;
+    u8 * divPtr;
+    u8 * joypPtr;
+    u8 * intf;
+    u8 * inte;
 
   private:
-    uint16_t const inline af() { return (a << 8) | GetFlagsAsInt(); }
-    uint16_t const inline bc() { return b << 8 | c; }
-    uint16_t const inline de() { return d << 8 | e; }
-    uint16_t const inline hl() { return h << 8 | l; }
+    u16 const inline af() { return (a << 8) | GetFlagsAsInt(); }
+    u16 const inline bc() { return b << 8 | c; }
+    u16 const inline de() { return d << 8 | e; }
+    u16 const inline hl() { return h << 8 | l; }
 
-    void inline af(uint8_t x, uint8_t y) { a = x; SetFlags(y); }
-    void inline bc(uint8_t x, uint8_t y) { b = x; c = y; }
-    void inline de(uint8_t x, uint8_t y) { d = x; e = y; }
-    void inline hl(uint8_t x, uint8_t y) { h = x; l = y; }
+    void inline af(u8 x, u8 y) { a = x; SetFlags(y); }
+    void inline bc(u8 x, u8 y) { b = x; c = y; }
+    void inline de(u8 x, u8 y) { d = x; e = y; }
+    void inline hl(u8 x, u8 y) { h = x; l = y; }
 
-    void inline af(uint16_t x) { a = x >> 8; SetFlags(x & 0xFF); }
-    void inline bc(uint16_t x) { b = x >> 8; c = x & 0xFF; }
-    void inline de(uint16_t x) { d = x >> 8; e = x & 0xFF; }
-    void inline hl(uint16_t x) { h = x >> 8; l = x & 0xFF; }
+    void inline af(u16 x) { a = x >> 8; SetFlags(x & 0xFF); }
+    void inline bc(u16 x) { b = x >> 8; c = x & 0xFF; }
+    void inline de(u16 x) { d = x >> 8; e = x & 0xFF; }
+    void inline hl(u16 x) { h = x >> 8; l = x & 0xFF; }
 
     void SetFlags(bool z, bool n, bool hc, bool c);
-    void SetFlags(uint8_t flags);
-    uint8_t const GetFlagsAsInt();
+    void SetFlags(u8 flags);
+    u8 const GetFlagsAsInt();
 
     void Decode8BitOpcode();
     void Decode16BitOpcode();
 
-    void Tick(uint8_t cycles);
+    void Tick(u8 cycles);
 
-    uint8_t MemReadRaw(Address addr);
-    uint8_t MemRead_u8(Address * addr);
-    uint16_t MemRead_u16(Address * addr);
-    void MemWriteRaw(Address addr, uint8_t value);
-    void MemWrite_u8(Address * addr, uint8_t value);
-    void MemWrite_u16(Address * addr, uint16_t value);
-    void Push_u8(uint8_t value);
-    void Push_u16(uint16_t value);
+    u8 MemReadRaw(Address addr);
+    u8 MemRead_u8(Address * addr);
+    u16 MemRead_u16(Address * addr);
+    void MemWriteRaw(Address addr, u8 value);
+    void MemWrite_u8(Address * addr, u8 value);
+    void MemWrite_u16(Address * addr, u16 value);
+    void Push_u8(u8 value);
+    void Push_u16(u16 value);
 
-    void SetFlags_16bitAdd_C(uint16_t x, uint16_t y);
-    void SetFlags_16bitAdd_HC(uint16_t x, uint16_t y);
-    void SetFlags_8bitAdd_C(uint8_t x, uint8_t y);
-    void SetFlags_8bitAdd_HC(uint8_t x, uint8_t y);
+    void SetFlags_16bitAdd_C(u16 x, u16 y);
+    void SetFlags_16bitAdd_HC(u16 x, u16 y);
+    void SetFlags_8bitAdd_C(u8 x, u8 y);
+    void SetFlags_8bitAdd_HC(u8 x, u8 y);
 
-    void SetFlags_16bitSub_C(uint16_t x, uint16_t y);
-    void SetFlags_16bitSub_HC(uint16_t x, uint16_t y);
-    void SetFlags_8bitSub_C(uint8_t x, uint8_t y);
-    void SetFlags_8bitSub_HC(uint8_t x, uint8_t y);
+    void SetFlags_16bitSub_C(u16 x, u16 y);
+    void SetFlags_16bitSub_HC(u16 x, u16 y);
+    void SetFlags_8bitSub_C(u8 x, u8 y);
+    void SetFlags_8bitSub_HC(u8 x, u8 y);
 
     void HandleInterrupt();
-    void RunTimer(uint8_t cycles);
+    void RunTimer(u8 cycles);
 
     bool doTMAreload = false;
     bool doneTMAreload = false;
-    uint8_t tmaReload = 0;
+    u8 tmaReload = 0;
 
-    uint8_t keyvec_dir = 0x0F;
-    uint8_t keyvec_act = 0x0F;
+    u8 joypSelection = JOYP_SEL_NIL_VAL;
+    u8 keyvec_dir = 0x0F;
+    u8 keyvec_act = 0x0F;
 
   public: // make private later
     Bus * bus;
@@ -246,13 +244,18 @@ class Cpu
       &h, &l, NULL, &a,
     };
 
+    bool doDMATransfer = false;
+    Address dmaAddr;
+    u8 dmaByteCnt;
+    void DMA_Transfer();
+
     void NOP();
     void LD_atNN_SP();
     void STOP();
     void JR_s8();
     void JR_cc_s8(Flag * f, bool cond);
-    void LD_rp_NN(uint8_t p);
-    void ADD_HL_rp(uint8_t p);
+    void LD_rp_NN(u8 p);
+    void ADD_HL_rp(u8 p);
     void LD_atBC_A();
     void LD_atDE_A();
     void LD_atHLi_A();
@@ -261,8 +264,8 @@ class Cpu
     void LD_A_atDE();
     void LD_A_atHLi();
     void LD_A_atHLd();
-    void INC_rp(uint8_t p);
-    void DEC_rp(uint8_t p);
+    void INC_rp(u8 p);
+    void DEC_rp(u8 p);
     void INC_r(Register * x);
     void DEC_r(Register * x);
     void LD_r_d8(Register * x);
@@ -282,7 +285,7 @@ class Cpu
     void ADD_SP_s8();
     void LD_A_a8();
     void LD_HL_SPs8();
-    void POP_rp2(uint8_t p);
+    void POP_rp2(u8 p);
     void RET();
     void RETI();
     void JP_HL();
@@ -296,14 +299,14 @@ class Cpu
     void EI();
     void DI();
     void CALL_cc_a16(Flag * cc, bool cond);
-    void PUSH_rp2(uint8_t p);
+    void PUSH_rp2(u8 p);
     void CALL_a16();
     void ALU_n(DT_ALU_Type aluType);
     void RST_y(Address addr);
     void ROT_y_z(DT_Rot_Type rotType, Register * x);
-    void BIT_y_r(uint8_t n, Register * x);
-    void RES_y_r(uint8_t n, Register * x);
-    void SET_y_r(uint8_t n, Register * x);
+    void BIT_y_r(u8 n, Register * x);
+    void RES_y_r(u8 n, Register * x);
+    void SET_y_r(u8 n, Register * x);
 
     // Mainly for debugging
     const char* opcode_8bit_names[256] = { 

@@ -36,7 +36,7 @@ static const char* PpuStates_Str[] {
   "PIXEL_TRANSFER",
 };
 
-static const uint8_t PPU_STATE_CYCLES[5] = {
+static const u8 PPU_STATE_CYCLES[5] = {
   0,  // INVALID
   40, // OAM
   4,  // HBlank
@@ -49,46 +49,49 @@ class Ppu
   private:
     Bus*    bus;
     Display* disp;
-    uint8_t ppuState = VBLANK; // not sure what it actually starts in
+    u8 ppuState = VBLANK; // not sure what it actually starts in
 
     // Cycles since the last time the PPU actually ran.
     int cyclesSinceLastExec = 0;
     
     // x coord for pixel transfer
-    uint16_t x = 0;
+    u16 x = 0;
 
     // Pointers to commonly used registers
     // saves me some keystrokes
-    uint8_t * ly;
-    uint8_t * wx;
-    uint8_t * wy;
-    uint8_t * scx;
-    uint8_t * scy;
-    uint8_t * stat;
-    uint8_t * lcdc;
-    uint8_t * intf;
+    u8 * ly;
+    u8 * wx;
+    u8 * wy;
+    u8 * scx;
+    u8 * scy;
+    u8 * stat;
+    u8 * lcdc;
+    u8 * intf;
 
     int ppuCyclesElapsed = 0;
 
     static Color gb_colors[4];
+   
+    std::vector<u16> spritesOnScanline;
 
     // PPU state machine
-    void OAMScan(uint8_t *nextState);
-    void PixelTransfer(uint8_t *nextState);
-    void HBlank(uint8_t *nextState);
-    void VBlank(uint8_t *nextState);
+    void OAMScan(u8 *nextState);
+    void PixelTransfer(u8 *nextState);
+    void HBlank(u8 *nextState);
+    void VBlank(u8 *nextState);
 
+    bool Px_RenderSprite(void);
+    u8 Px_FindScanlineSprite(void);
     void Px_RenderBackground(void);
     void Px_RenderWindow(void);
-    void Px_RenderSprite(void);
 
     // Helpers
-    void UpdateCycles(uint8_t state);
+    void UpdateCycles(u8 state);
     bool UseUnsignedAddressing(void);
 
   public:
     void Init();
-    bool Execute(uint8_t cpuCyclesElapsed);
+    bool Execute(u8 cpuCyclesElapsed);
     int cnt = 144; // ???
 
     // Constructor & destructor
