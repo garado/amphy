@@ -20,7 +20,7 @@ void Cpu::STOP() {
   u8 irq = MemReadRaw(INTF);
   u8 intrPending = ie & irq;
 
-  bus->Write(DIV, 0);
+  *divPtr = 0;
   cpuState = CPU_STOP;
 
   if (!intrPending) {
@@ -487,12 +487,15 @@ void Cpu::RET_cc(Flag * flag, bool cond) {
   }
 }
 
+#include "debug.h"
+
 /* E0: LD (FF00 + a8), A
  * Store contents of Reg A into (FF00 + a8) */
 void Cpu::LD_a8_A() {
   u8 a8 = MemRead_u8(&pc);
   Address addr = 0xFF00 + a8;
   MemWrite_u8(&addr, a);
+  Tick(ALU_CYCLES);
 }
 
 /* E8: ADD SP, s8
@@ -560,7 +563,7 @@ void Cpu::RET() {
 void Cpu::RETI() {
   ime = prevIme;
   pc = MemRead_u16(&sp);
-  bus->Write(INTF, 0); // TODO VERY BAD FIX LATER
+  *intf = 0; // TODO VERY BAD FIX LATER
   Tick(ALU_CYCLES);
 }
 

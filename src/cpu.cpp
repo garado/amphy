@@ -15,6 +15,9 @@ void Cpu::Init() {
   joypPtr = bus->GetAddressPointer(JOYP);
   intf = bus->GetAddressPointer(INTF);
   inte = bus->GetAddressPointer(INTE);
+  tima = bus->GetAddressPointer(TIMA);
+  tma = bus->GetAddressPointer(TMA);
+  tac = bus->GetAddressPointer(TAC);
 }
 
 /* @Function Cpu::Execute
@@ -36,12 +39,12 @@ void Cpu::Execute() {
       break;
 
     case CPU_HALT_IME_SET:
-      if (gbdoc || step) debugger->Regdump();
+      if (gbdoc || step) debugger->Step();
       Tick(NOP_CYCLES);
       break;
 
     case CPU_HALT_IME_NOT_SET:
-      if (gbdoc || step) debugger->Regdump();
+      if (gbdoc || step) debugger->Step();
       Tick(NOP_CYCLES);
       break;
 
@@ -146,45 +149,41 @@ u8 Cpu::MemReadRaw(Address addr)
 
 u8 Cpu::MemRead_u8(Address * addr)
 {
-  u8 val = MemReadRaw((*addr)++);
   Tick(MEM_RW_CYCLES);
-  return val;
+  return MemReadRaw((*addr)++);
 }
 
 u16 Cpu::MemRead_u16(Address * addr)
 {
+  Tick(MEM_RW_CYCLES);
   u8 lsb = MemReadRaw((*addr)++);
+  Tick(MEM_RW_CYCLES);
   u8 msb = MemReadRaw((*addr)++);
   return (msb << 8) | lsb;
 }
 
-void Cpu::MemWriteRaw(Address addr, u8 value)
-{
+void Cpu::MemWriteRaw(Address addr, u8 value) {
   bus->Write(addr, value);
 }
 
-void Cpu::MemWrite_u8(Address * addr, u8 value)
-{
+void Cpu::MemWrite_u8(Address * addr, u8 value) {
   MemWriteRaw((*addr)++, value);
   Tick(MEM_RW_CYCLES);
 }
 
-void Cpu::MemWrite_u16(Address * addr, u16 value)
-{
+void Cpu::MemWrite_u16(Address * addr, u16 value) {
   MemWrite_u8(addr, value & 0xFF);
   MemWrite_u8(addr, value >> 8);
 }
 
-void Cpu::Push_u8(u8 value)
-{
+void Cpu::Push_u8(u8 value) {
   --sp;
   Tick(ALU_CYCLES);
   MemWriteRaw(sp, value);
   Tick(MEM_RW_CYCLES);
 }
 
-void Cpu::Push_u16(u16 value)
-{
+void Cpu::Push_u16(u16 value) {
   Push_u8(value >> 8);
   Push_u8(value & 0xFF);
 }
@@ -452,7 +451,7 @@ void Cpu::HandleInterrupt()
 {
   u8 ie = MemReadRaw(INTE);
   u8 irq = MemReadRaw(INTF);
-  
+
   u8 intrPending = ie & irq;
 
   // Do nothing if no interrupts pending
@@ -482,7 +481,7 @@ void Cpu::HandleInterrupt()
       pc = Intr_Addr[i];
       prevIme = ime;
       ime = false;
-      bus->BitClear(INTF, Intr_Bits[i]);
+      *intf = BIT_CLEAR(INTF, Intr_Bits[i]);
       return;
     }
   }
@@ -498,17 +497,16 @@ void Cpu::HandleInterrupt()
  * manually. */
 void Cpu::RunTimer(u8 cycles)
 {
-  u16 old_sysclk = sysclk;
   sysclk += cycles;
   *divPtr = sysclk >> 8;
 
   // TIMA is incremented at the frequency specified by TAC.
   // When the value > 0xFF (overflows), it is reset to the value
   // specified in TMA and an interrupt is requested.
-  u8 tac = bus->Read(TAC);
-
   // Don't do anything if timer not enabled
-  if (!TAC_ENABLE_MASK(tac)) return;
+  if (!TAC_ENABLE_MASK(*tac)) {
+    oldSysclk = sysclk;
+  }
 
   if (doneTMAreload) doneTMAreload = false;
 
@@ -516,8 +514,7 @@ void Cpu::RunTimer(u8 cycles)
   if (doTMAreload) {
     tmaReload -= cycles;
     if (tmaReload == 0) {
-      u8 tma = bus->Read(TMA);
-      bus->Write(TIMA, tma);
+      *tima = *tma;
       doTMAreload = false;
 
       // helps prevent writes to tima while tima is
@@ -530,9 +527,8 @@ void Cpu::RunTimer(u8 cycles)
   // 1024 clock cycles. log_2(1024) = 10. We can tell if 1024
   // cycles have passed by checking if the 10th bit of sysclk
   // changes state.
-  u8 tac_select = TAC_SELECT_MASK(tac);
   u16 tac_mask = 0;
-  switch(tac_select){
+  switch(TAC_SELECT_MASK(*tac)) {
     case TAC_1024:  tac_mask = 0x400; break;
     case TAC_16:    tac_mask = 0x10;  break;
     case TAC_64:    tac_mask = 0x40;  break;
@@ -542,24 +538,23 @@ void Cpu::RunTimer(u8 cycles)
 
   // XOR returns 1 if bits are different (state change). Then
   // we mask with tac_mask to check if a specific bit changes state.
-  if ((old_sysclk ^ sysclk) & tac_mask) {
-    u8 tima = bus->Read(TIMA);
-
+  if ((oldSysclk ^ sysclk) & tac_mask) {
     // Request interrupt and reset TIMA to value in TMA if
     // overflow occurs. Increment normally otherwise.
-    if (tima == 0xFF) {
+    if (*tima == 0xFF) {
 
       // After overflow, TIMA contains 0 for 4 m-cycles before
       // being reloaded with value from TMA register
       doTMAreload = true;
       tmaReload = TMA_RELOAD;
-      bus->Write(TIMA, 0);
-
-      bus->BitSet(INTF, INTF_TMR_IRQ);
+      *tima = 0;
+      *intf = BIT_SET(*intf, INTF_TMR_IRQ);
     } else {
-      bus->Write(TIMA, ++tima);
+      (*tima)++;
     }
   }
+
+  oldSysclk = sysclk;
 }
 
 static const char* keytype_str[2] {

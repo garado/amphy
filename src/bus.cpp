@@ -20,8 +20,27 @@ void Bus::Init() {
   io_reg.at(TAC  - IO_START) = 0xF8;
   io_reg.at(LCDC - IO_START) = 0x00;
   io_reg.at(JOYP - IO_START) = 0xCF;
-  // io_reg.at(INTE - IO_START) = 0xE0;
-  // io_reg.at(INTF - IO_START) = 0xE0;
+
+  // Open rom for reading
+  // romFname = "src/bootix_dmg.bin";
+  // std::ifstream infile(romFname, std::ios::binary);
+  // 
+  // if (!infile.is_open()) {
+  //   printf("ROM could not be opened\n");
+  //   return;
+  // }
+
+  // std::vector<u8> const bootRom(
+  //    (std::istreambuf_iterator<char>(infile)),
+  //    (std::istreambuf_iterator<char>()));
+  // infile.close();
+
+  // // Copy 0000-3FFF to bank 0
+  // std::vector<u8>::const_iterator first = bootRom.begin();
+  // std::vector<u8>::const_iterator last = bootRom.begin() + 0x3FFF;
+  // rom_00.insert(rom_00.begin(), first, last);
+
+  // cpu->pc = 0;
 }
 
 u8 Bus::Read(u16 address) const {
@@ -141,8 +160,6 @@ void Bus::Write_MMIO(u16 address, u8 val) {
       } else {
         cpu->joypSelection = JOYP_SEL_NIL_VAL;
       }
-
-      // io_reg.at(shiftedAddr) = writeVal;
       break;
 
     // a write triggers DMA transfer
@@ -152,6 +169,12 @@ void Bus::Write_MMIO(u16 address, u8 val) {
       cpu->dmaAddr = val << 8;
 
       cpu->dmaByteCnt = 0;
+      io_reg.at(shiftedAddr) = val;
+      break;
+
+    // Bit 7 pulled high
+    case STAT:
+      val |= 0x80;
       io_reg.at(shiftedAddr) = val;
       break;
 
@@ -261,21 +284,4 @@ void Bus::SwitchBanks(u8 bankNum) {
   last += (bankNum * BANK_SIZE);
 
   rom_01.insert(rom_01.begin(), first, last);
-}
-
-/* Maybe these should be moved elsewhere (utils?) */
-u8 const Bus::BitTest(u16 address, u8 bitpos) {
-  return (Read(address) & (1 << bitpos));
-}
-
-void Bus::BitSet(u16 address, u8 bitpos) {
-  u8 data = Read(address);
-  data |= (1 << bitpos);
-  Write(address, data);
-}
-
-void Bus::BitClear(u16 address, u8 bitpos) {
-  u8 mask = ~(1 << bitpos);
-  u8 data = Read(address) & mask;
-  Write(address, data);
 }

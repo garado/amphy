@@ -119,10 +119,6 @@ class Bus
     u8 Read(u16 address) const;
     u8 CopyRom(std::string fname);
     u8 * GetAddressPointer(u16 address);
-
-    u8 const BitTest(u16 address, u8 bit);
-    void BitSet(u16 address, u8 bit);
-    void BitClear(u16 address, u8 bit);
 };
 
 #endif

@@ -48,7 +48,7 @@ int main( int argc, char* argv[] )
   }
 
   // ly is initialized to 0x90 in blargg's tests?
-  bus->Write(LY, 0x90);
+  // bus->Write(LY, 0x90);
   bus->Write(STAT, 0x81);
   bus->Init();
   cpu->Init();
@@ -57,12 +57,12 @@ int main( int argc, char* argv[] )
 
   while(!disp->amphy_quit) {
 
-    disp->HandleEvent();
+    // disp->HandleEvent();
 
     try {
       cpu->Execute();
     } catch (...) {
-      std::cout << __PRETTY_FUNCTION__ << ": Fatal CPU error: exiting" << std::endl;
+      printf("Fatal CPU error: exiting\n");
       debugger->Regdump();
       return EXIT_FAILURE;
     }

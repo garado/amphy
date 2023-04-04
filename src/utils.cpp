@@ -21,4 +21,3 @@ void ParseFlags(int argc, char* argv[], Cpu* cpu) {
     }
   }
 }
-

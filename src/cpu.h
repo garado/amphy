@@ -18,7 +18,7 @@
 #define NOP_CYCLES 4
 
 // Timer control
-#define TAC_ENABLE_BIT 0x2
+#define TAC_ENABLE_BIT 2
 #define TAC_ENABLE_MASK(x) (((unsigned) x >> TAC_ENABLE_BIT) & 0x1)
 #define TAC_SELECT_MASK(x) (((unsigned) x & 0b11))
 #define TAC_1024 0b00
@@ -117,12 +117,12 @@ class Debugger;
 class Cpu {
   private:
     u8 a = 0x01;
-    u8 b = 0xFF;
+    u8 b = 0x00;
     u8 c = 0x13;
     u8 d = 0x00;
-    u8 e = 0xC1;
-    u8 h = 0x84;
-    u8 l = 0x03;
+    u8 e = 0xD8;
+    u8 h = 0x01;
+    u8 l = 0x4D;
 
     struct f {
       bool Z = false;  // Zero
@@ -133,6 +133,7 @@ class Cpu {
 
     u8 op = 0x00;
     u16 sysclk = 0x00;
+    u16 oldSysclk = 0x00;
     u16 sp = 0xFFFE;
     u16 pc = 0x0100;
 
@@ -149,6 +150,9 @@ class Cpu {
     u8 * joypPtr;
     u8 * intf;
     u8 * inte;
+    u8 * tima;
+    u8 * tma;
+    u8 * tac;
 
   private:
     u16 const inline af() { return (a << 8) | GetFlagsAsInt(); }

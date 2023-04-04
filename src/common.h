@@ -97,10 +97,10 @@ typedef uint16_t u16;
 
 // STAT: LCD status
 #define STAT 0xFF41
-#define STAT_LYC_INTR_EN 6
-#define STAT_OAM_INTR_EN 5
-#define STAT_VBLANK_INTR_EN 4
-#define STAT_HBLANK_INTR_EN 3
+#define STAT_LYC_INTR 6
+#define STAT_OAM_INTR 5
+#define STAT_VBLANK_INTR 4
+#define STAT_HBLANK_INTR 3
 #define STAT_LYC_FLAG 2 
 
 // Misc PPU registers

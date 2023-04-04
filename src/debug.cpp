@@ -170,22 +170,25 @@ void Debugger::PrintCpuState() {
   printf("=== CPU STATE ===\n" \
       "State: %s\n" \
       "IME: %s\n"   \
-      "IE: %02X%s%s%s%s%s \n"  \
-      "IF: %02X%s%s%s%s%s \n", \
+      "IE: %02X%s%s%s%s%s \n" \
+      "IF: %02X%s%s%s%s%s \n" \
+      "OldSysclk/Sysclk: %X/%X\n", \
       Cpu_StatesStr[cpu->cpuState],
       (cpu->ime) ? "enabled" : "disabled",
       bus->Read(INTE),
-      bus->BitTest(INTE, 0) ? " VBLANK" : "",
-      bus->BitTest(INTE, 1) ? " STAT" : "",
-      bus->BitTest(INTE, 2) ? " TMR" : "",
-      bus->BitTest(INTE, 3) ? " SRL" : "",
-      bus->BitTest(INTE, 4) ? " JOYP" : "",
+      BIT_TEST(bus->Read(INTE), 0) ? " VBLANK" : "",
+      BIT_TEST(bus->Read(INTE), 1) ? " STAT" : "",
+      BIT_TEST(bus->Read(INTE), 2) ? " TMR" : "",
+      BIT_TEST(bus->Read(INTE), 3) ? " SRL" : "",
+      BIT_TEST(bus->Read(INTE), 4) ? " JOYP" : "",
       bus->Read(INTF),
-      bus->BitTest(INTF, 0) ? " VBLANK" : "",
-      bus->BitTest(INTF, 1) ? " STAT" : "",
-      bus->BitTest(INTF, 2) ? " TMR" : "",
-      bus->BitTest(INTF, 3) ? " SRL" : "",
-      bus->BitTest(INTF, 4) ? " JOYP" : ""
+      BIT_TEST(bus->Read(INTF), 0) ? " VBLANK" : "",
+      BIT_TEST(bus->Read(INTF), 1) ? " STAT" : "",
+      BIT_TEST(bus->Read(INTF), 2) ? " TMR" : "",
+      BIT_TEST(bus->Read(INTF), 3) ? " SRL" : "",
+      BIT_TEST(bus->Read(INTF), 4) ? " JOYP" : "",
+      cpu->oldSysclk,
+      cpu->sysclk
       );
 }
 

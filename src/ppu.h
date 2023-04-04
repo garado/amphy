@@ -12,7 +12,7 @@
 
 #define VBLANK_TOTAL_CYCLES 226
 #define PX_TRANSFER_X_DURATION 240
-#define PX_TRANSFER_Y_DURATION 160
+#define PX_TRANSFER_Y_DURATION 144 // ???
 #define HBLANK_X_DURATION   68
 #define VBLANK_Y_DURATION   68
 #define OAM_BYTES   40
@@ -49,7 +49,7 @@ class Ppu
   private:
     Bus*    bus;
     Display* disp;
-    u8 ppuState = VBLANK; // not sure what it actually starts in
+    u8 ppuState = OAM_SCAN; // not sure what it actually starts in
 
     // Cycles since the last time the PPU actually ran.
     int cyclesSinceLastExec = 0;
@@ -67,6 +67,10 @@ class Ppu
     u8 * stat;
     u8 * lcdc;
     u8 * intf;
+    u8 * obp0;
+    u8 * obp1;
+    u8 * bgp;
+    u8 * lyc;
 
     int ppuCyclesElapsed = 0;
 
@@ -87,7 +91,6 @@ class Ppu
 
     // Helpers
     void UpdateCycles(u8 state);
-    bool UseUnsignedAddressing(void);
 
   public:
     void Init();
