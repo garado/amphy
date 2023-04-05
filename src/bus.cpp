@@ -18,7 +18,8 @@ bool testflag;
 void Bus::Init() {
   cartType = rom_00.at(CART_TYPE);
   io_reg.at(TAC  - IO_START) = 0xF8;
-  io_reg.at(LCDC - IO_START) = 0x00;
+  io_reg.at(LCDC - IO_START) = 0x91;
+  io_reg.at(STAT - IO_START) = 0x81;
   io_reg.at(JOYP - IO_START) = 0xCF;
 
   // Open rom for reading

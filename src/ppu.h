@@ -10,14 +10,26 @@
 #include "cpu.h"
 #include "platform/platform.h"
 
-#define VBLANK_TOTAL_CYCLES 226
-#define PX_TRANSFER_X_DURATION 240
-#define PX_TRANSFER_Y_DURATION 144 // ???
-#define HBLANK_X_DURATION   68
-#define VBLANK_Y_DURATION   68
+#define DOTS_OAM 80
+#define DOTS_VBLANK_SCANLINE 456
+#define DOTS_VBLANK_TOTAL 4560
+#define DOTS_HBLANK 160
+#define DOTS_PXTRANSFER 216
+#define LY_AT_VBLANK_START 144
+
 #define OAM_BYTES   40
 
 #define NO_TRANSITION 0
+
+#define OAM_YPOS 0
+#define OAM_XPOS 1
+#define OAM_TIDX 2
+#define OAM_ATTR 3
+#define OAM_ATTR_BGW_OVER_OBJ 7
+#define OAM_ATTR_YFLIP 6
+#define OAM_ATTR_XFLIP 5
+#define OAM_ATTR_PALETTE 4
+
 
 /* This mode numbering MUST be followed */
 typedef enum PpuStates {
@@ -49,13 +61,20 @@ class Ppu
   private:
     Bus*    bus;
     Display* disp;
-    u8 ppuState = OAM_SCAN; // not sure what it actually starts in
+    u8 ppuState = VBLANK; // not sure what it actually starts in
 
     // Cycles since the last time the PPU actually ran.
     int cyclesSinceLastExec = 0;
     
     // x coord for pixel transfer
     u16 x = 0;
+
+    // Window internal line counter (y coord)
+    u16 wcnt = 0;
+    bool doIncrementWcnt = false;
+    bool doDrawWindow = false;
+
+    u16 dotsSinceStateSwitch = 0;
 
     // Pointers to commonly used registers
     // saves me some keystrokes
@@ -84,17 +103,17 @@ class Ppu
     void HBlank(u8 *nextState);
     void VBlank(u8 *nextState);
 
+    void Px_RenderBgWindow(void);
+
     bool Px_RenderSprite(void);
     u8 Px_FindScanlineSprite(void);
-    void Px_RenderBackground(void);
-    void Px_RenderWindow(void);
+    bool bgOverObj = false;
 
-    // Helpers
     void UpdateCycles(u8 state);
 
   public:
     void Init();
-    bool Execute(u8 cpuCyclesElapsed);
+    void Execute(u8 cpuCyclesElapsed);
     int cnt = 144; // ???
 
     // Constructor & destructor

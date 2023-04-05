@@ -85,7 +85,7 @@ void Debugger::Step() {
 
   if (bpSet) {
     if (cpu->pc == pcBreakpoint) {
-      bpSet = false;
+      if (!keepBp) bpSet = false;
     } else {
       return;
     }
@@ -108,6 +108,16 @@ void Debugger::Step() {
     // Nothing entered: just step 1 instruction
     if (cmd == "" && arg1 == "") {
       break;
+    }
+
+    if (cmd == "kbp") {
+      printf("Keeping breakpoint\n");
+      keepBp = !keepBp;
+      continue;
+    }
+
+    if (cmd == "q" || cmd == "quit") {
+      exit(0);
     }
 
     if (cmd == "help") {

@@ -92,6 +92,7 @@ void Display::DrawPixel(u16 x, u16 y, Color * c) {
 }
 
 void Display::Render() {
+  cleared = false;
   SDL_RenderPresent(renderer);
 }
 
@@ -173,4 +174,10 @@ void Display::HandleEvent() {
       }
     }
   }
+}
+
+void Display::Clear(Color * c) {
+  cleared = true;
+  SDL_SetRenderDrawColor(renderer, c->r, c->g, c->b, 0xFF);
+  SDL_RenderClear(renderer);
 }

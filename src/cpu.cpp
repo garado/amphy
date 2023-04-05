@@ -142,19 +142,16 @@ void Cpu::DMA_Transfer() {
  * To get more accurate instruction timing, ticks PPU
  * on every memory read/write. Also increments the address
  * to be read/written from. */
-u8 Cpu::MemReadRaw(Address addr)
-{
+u8 Cpu::MemReadRaw(Address addr) {
   return bus->Read(addr);
 }
 
-u8 Cpu::MemRead_u8(Address * addr)
-{
+u8 Cpu::MemRead_u8(Address * addr) {
   Tick(MEM_RW_CYCLES);
   return MemReadRaw((*addr)++);
 }
 
-u16 Cpu::MemRead_u16(Address * addr)
-{
+u16 Cpu::MemRead_u16(Address * addr) {
   Tick(MEM_RW_CYCLES);
   u8 lsb = MemReadRaw((*addr)++);
   Tick(MEM_RW_CYCLES);

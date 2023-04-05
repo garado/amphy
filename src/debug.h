@@ -23,6 +23,7 @@ class Debugger {
     int pcBreakpoint;
     int memBreakpoint;
     bool ffSet, bpSet, bpOpSet;
+    bool keepBp = false;
 
   private:
     void Help();

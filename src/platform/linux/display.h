@@ -50,6 +50,8 @@ class Display
 
     Cpu * cpu;
 
+    bool cleared = false;
+
   private:
     bool LoadSplash();
     void ApplyImg();
@@ -60,6 +62,7 @@ class Display
     void HandleEvent();
     void DrawPixel(u16 x, u16 y, Color * c);
     void Render();
+    void Clear(Color * c);
 };
 
 #endif
