@@ -2,11 +2,12 @@
 /* █▀▀ █▀█ ▄▀█ █▀█ █░█ █ █▀▀ █▀ */
 /* █▄█ █▀▄ █▀█ █▀▀ █▀█ █ █▄▄ ▄█ */
 
+#include <cstdio>
+#include <bits/stdc++.h>
 #include "common.h"
 #include "ppu.h"
 #include "bus.h"
 #include "platform/platform.h"
-#include <cstdio>
 
 /*                  240                       68
  *          ◄───────────────────────────► ◄──────────►
@@ -27,10 +28,10 @@
  *       ▼  └─────────────────────────────────────────┘
  */
 
-Color color_3 = {0x08, 0x18, 0x20};
-Color color_2 = {0x34, 0x68, 0x56};
-Color color_1 = {0x88, 0xC0, 0x70};
 Color color_0 = {0xE0, 0xF8, 0xD0};
+Color color_1 = {0x88, 0xC0, 0x70};
+Color color_2 = {0x34, 0x68, 0x56};
+Color color_3 = {0x08, 0x18, 0x20};
 
 Color Ppu::gb_colors[4] = { color_0, color_1, color_2, color_3 };
 
@@ -94,7 +95,7 @@ void Ppu::Execute(u8 cpuCyclesElapsed) {
 
     // Set variables and interrupts for state transitions
     if (nextState != NO_TRANSITION) {
-      // Set STAT mode flags
+      // STAT mode flags
       // Need to decrement nextState because enum is offset
       // by 1 (0 == NoTransition)
       *stat = (*stat & 0xFC) | (nextState - 1);
@@ -104,7 +105,6 @@ void Ppu::Execute(u8 cpuCyclesElapsed) {
       if (nextState == OAM_SCAN) {
         x = 0;
         (*ly)++;
-        if (doIncrementWcnt) wcnt++;
         spritesOnScanline.clear();
         if (BIT_TEST(*stat, STAT_OAM_INTR)) setStatIntr = true;
 
@@ -117,18 +117,20 @@ void Ppu::Execute(u8 cpuCyclesElapsed) {
       if (nextState == VBLANK) {
         *intf = BIT_SET(*intf, INTF_VBLANK_IRQ);
         if (BIT_TEST(*stat, STAT_VBLANK_INTR)) setStatIntr = true;
+        wcnt = 0;
         disp->HandleEvent();
         disp->Render();
       }
 
       if (nextState == HBLANK) {
-        doIncrementWcnt = false;
+        if (renderedWindow) wcnt++;
+        renderedWindow = false;
         if (BIT_TEST(*stat, STAT_HBLANK_INTR)) setStatIntr = true;
       }
 
       if (nextState == PIXEL_TRANSFER) {
-        wcnt = 0;
-        doDrawWindow = false;
+        // wcnt = 0;
+        // doDrawWindow = false;
       }
 
       if (setStatIntr) *intf = BIT_SET(*intf, INTF_STAT_IRQ);
@@ -167,7 +169,7 @@ void Ppu::OAMScan(u8 *nextState) {
 
   // Check if sprite is on current scanline
   u8 spriteHeight = BIT_TEST(*lcdc, LCDC_OBJ_SIZE) ? 16 : 8;
-  bool onScanline = ypos <= *ly && ypos+spriteHeight >= *ly;
+  bool onScanline = ypos <= *ly && ypos+spriteHeight > *ly;
   if (onScanline && spritesOnScanline.size() < 10) {
     spritesOnScanline.push_back(addr);
   }
@@ -176,6 +178,13 @@ void Ppu::OAMScan(u8 *nextState) {
   if (dotsSinceStateSwitch == DOTS_OAM) {
     spriteIndex = 0;
     *nextState = PIXEL_TRANSFER;
+
+    // TODO Sort by x coordinate, lower comes first
+    // sort(spritesOnScanline.begin(), spritesOnScanline.end(),
+    //     [this](const u8 & a, u8 & b) -> bool
+    //     {
+    //       return bus->Read(a+OAM_XPOS) < bus->Read(b+OAM_XPOS);
+    //     });
   }
 }
 
@@ -185,35 +194,31 @@ void Ppu::PixelTransfer(u8 *nextState)
 {
   if (BIT_TEST(*lcdc, LCDC_EN) == false) {
     ++x;
-    if (x >= PX_TRANSFER_X_DURATION) {
+    if (dotsSinceStateSwitch == DOTS_PXTRANSFER) {
       *nextState = HBLANK;
     }
     return;
   }
 
-  // Determining which layer gets drawn
   bool objEn = BIT_TEST(*lcdc, LCDC_OBJ_EN);
   bool winEn = BIT_TEST(*lcdc, LCDC_WIN_EN);
   bool bgEn  = BIT_TEST(*lcdc, LCDC_BG_EN);
 
-  bool spriteDrawn = false;
+  bgPalette = 0;
+
+  bool drewBg = false;
+  if (bgEn || winEn) {
+    drewBg = Px_RenderBgWindow();
+  }
+
+  bool drewSprite = false;
   if (objEn && spritesOnScanline.size() != 0) {
-    spriteDrawn = Px_RenderSprite();
+    drewSprite = Px_RenderSprite();
   }
 
-  if (!spriteDrawn || bgOverObj) {
-    // In hardware it's wy == ly not wy <= ly for whatever reason
-    if (*wy == *ly) doDrawWindow = true;
-
-    if (bgEn || winEn) {
-      Px_RenderBgWindow();
-    } else { // draw white if nothing else gets drawn
-      disp->DrawPixel(x, *ly, &gb_colors[0]);
-    }
-  }
+  if (!drewBg && !drewSprite) disp->DrawPixel(x, *ly, &gb_colors[0]);
 
   ++x;
-  bgOverObj = false;
   if (dotsSinceStateSwitch == DOTS_PXTRANSFER) {
     *nextState = HBLANK;
   }
@@ -221,26 +226,22 @@ void Ppu::PixelTransfer(u8 *nextState)
 
 /* @Function Ppu::Px_RenderBgWindo
  * @brief Render a background or window pixel */
-void Ppu::Px_RenderBgWindow(void) {
+bool Ppu::Px_RenderBgWindow(void) {
   // Set vars based on whether we're drawing bg or window
   u8 tmap_x, tmap_y, thisX, thisY;
   u16 tmap_base;
 
-  bool winEn = BIT_TEST(*lcdc, LCDC_WIN_EN);
-  if (winEn && (*wy <= *ly) && ((*wx+7) <= x)) {
-    doIncrementWcnt = true;
-    tmap_x = (x + *wx - 7);
-    tmap_y = (*wy + wcnt);
+  bool renderedWindowHere = false;
 
-    thisX = (x + 7 - *wx);
-    thisY = wcnt;
+  bool winEn = BIT_TEST(*lcdc, LCDC_WIN_EN);
+  if (winEn && (*wy <= *ly) && ((*wx-7) <= x)) {
+    renderedWindow = true;
+    tmap_x = thisX = x + 7 - *wx;
+    tmap_y = thisY = wcnt;
     tmap_base = BIT_TEST(*lcdc, LCDC_WIN_TMAP)? 0x9C00 : 0x9800;
   } else {
-    tmap_x = (x + *scx);
-    tmap_y = (*ly + *scy);
-
-    thisY = *scy + *ly;
-    thisX = *scx + x;
+    tmap_x = thisX = (*scx + x);
+    tmap_y = thisY = (*scy + *ly);
     tmap_base = BIT_TEST(*lcdc, LCDC_BG_TMAP)? 0x9C00 : 0x9800;
   }
 
@@ -249,7 +250,7 @@ void Ppu::Px_RenderBgWindow(void) {
 
   // Read tile data using signed or unsigned tile index
   u8 tile_index = bus->Read(tmap_addr);
-
+  
   u16 tdata_addr, tdata_base;
   u8 useUnsignedAddressing = BIT_TEST(*lcdc, LCDC_BGW_ADDR_MODE);
   if (useUnsignedAddressing) {
@@ -261,7 +262,7 @@ void Ppu::Px_RenderBgWindow(void) {
   }
 
   // Get x and y coordinates within 8x8 tile
-  u8 tile_x = 7 - (thisX % 8);
+  u8 tile_x = 7 - thisX % 8;
   u8 tile_y = thisY % 8;
   tdata_addr += (tile_y * 2);
 
@@ -270,65 +271,41 @@ void Ppu::Px_RenderBgWindow(void) {
   u8 msbit = BIT_GET(bus->Read(tdata_addr+1), tile_x);
   u8 id = (msbit << 1) | lsbit;
 
-  // Apply color
-  u8 paletteID = (*bgp >> (id * 2)) & 0b11;
-  Color c = gb_colors[paletteID];
-
-  // If a sprite was drawn at this coord and its bgOverObj
-  // attribute was set, BG and Window colors 1-3 should be
-  // drawn over it.
-  if (bgOverObj && paletteID == 3) return;
+  // Apply color (also used in RenderSprite)
+  bgPalette = (*bgp >> (id * 2)) & 0b11;
+  Color c = gb_colors[bgPalette];
 
   disp->DrawPixel(x, *ly, &c);
-}
-
-/* @Function Ppu::FindScanlineSprite
- * @return Index of sprite within spritesOnScanline
- * @brief Iterate through the sprites on this scanline and find
- * a suitable one to draw. */
-u8 Ppu::Px_FindScanlineSprite(void) {
-  for (u8 i = 0; i < spritesOnScanline.size(); i++) {
-    Address oamAddr = spritesOnScanline[i];
-    u8 spriteX = bus->Read(oamAddr + OAM_XPOS) - 8;
-    if (spriteX <= x && spriteX+8 > x) {
-      return i;
-    }
-  }
-
-  return 0xFF;
+  return true;
 }
 
 /* @Function Ppu::RenderSprite */
 bool Ppu::Px_RenderSprite(void) {
   // All sprites on scanline are stored in spritesOnScanline vec
-  // Figure out which of them to draw
-  u8 idx = Px_FindScanlineSprite();
+  // Find the one with the lowest x coordinate
+  u8 idx = 0xFF; // Value if sprite not found
+  u8 idx_X = 0;
+  for (u8 i = 0; i < spritesOnScanline.size(); i++) {
+    Address oamAddr = spritesOnScanline[i];
+    u8 spriteX = bus->Read(oamAddr + OAM_XPOS) - 8;
+    bool inRange = spriteX <= x && spriteX+8 > x;
+    bool spriteFoundShouldReplace = idx != 0xFF && spriteX < idx_X;
+    if (inRange && (idx == 0xFF || spriteFoundShouldReplace)) {
+      idx = i;
+      idx_X = spriteX;
+    }
+  }
   if (idx == 0xFF) return false;
 
   // Now find the tile data address
   // Byte 2 of sprite data is tile index
   Address oamAddr = spritesOnScanline[idx];
   u8 tileIndex = bus->Read(oamAddr + OAM_TIDX);
-
+  
   // One tile is 16 bytes; use current y position within the sprite
   // to find the correct 2 bytes to read from
   u16 cur_y_pos = *ly - bus->Read(oamAddr) + 16;
-
-  // Bit 0 of tile index for 8x16 objects should be ignored
-  bool renderingBottomTile = cur_y_pos >= 8;
-  if (BIT_TEST(*lcdc, LCDC_OBJ_SIZE)) {
-    if (renderingBottomTile) {
-      tileIndex &= 0xFE;
-    } else {
-      tileIndex |= 0x01;
-      cur_y_pos -= 8;
-    }
-  }
-
-  // u16 tmap_index = ((tmap_y/8) * 32) + (tmap_x / 8);
-  // u16 tmap_addr = tmap_base | tmap_index;
-  Address tdataAddr = 0x8000 | (tileIndex * 16);
-
+ 
   u8 attr = bus->Read(oamAddr + OAM_ATTR);
 
   // Handle vertical flip
@@ -337,6 +314,18 @@ bool Ppu::Px_RenderSprite(void) {
     cur_y_pos = objSize - 1 - cur_y_pos;
   }
 
+  // Bit 0 of tile index for 8x16 objects should be ignored
+  if (BIT_TEST(*lcdc, LCDC_OBJ_SIZE)) {
+    bool renderingBottomTile = cur_y_pos >= 8;
+    if (renderingBottomTile) {
+      tileIndex &= 0xFE;
+    } else {
+      tileIndex |= 0x01;
+      cur_y_pos -= 8;
+    }
+  }
+
+  Address tdataAddr = 0x8000 | (tileIndex * 16);
   tdataAddr += (cur_y_pos * 2);
 
   // Find correct column within tile
@@ -354,13 +343,17 @@ bool Ppu::Px_RenderSprite(void) {
 
   // Apply color
   u8 palette = BIT_TEST(attr, OAM_ATTR_PALETTE) ? *obp1 : *obp0;
-  u8 paletteID = (palette >> (id * 2)) & 0b11;
+  u8 paletteID = ((palette & 0xFC) >> (id * 2)) & 0b11;
   Color c = gb_colors[paletteID];
 
-  // Don't draw transparent (id == 0) pixels
+  bool bgPriority = BIT_TEST(attr, OAM_ATTR_BG_PRIORITY);
+
   if (paletteID == 0) return false;
 
-  bgOverObj = BIT_TEST(attr, OAM_ATTR_BGW_OVER_OBJ);
+  // When bg has priority, sprite is behind colors 1-3
+  if (bgPriority && bgPalette != 0) {
+    return false;
+  }
 
   disp->DrawPixel(x, *ly, &c);
   return true;
@@ -368,7 +361,7 @@ bool Ppu::Px_RenderSprite(void) {
 
 /* Ppu::HBlank */
 void Ppu::HBlank(u8 *nextState) {
-  if (*ly == *wy) doDrawWindow = true;
+  // if (*ly == *wy) doDrawWindow = true;
   if (dotsSinceStateSwitch == DOTS_HBLANK) {
     if (*ly == LY_AT_VBLANK_START) {
       *nextState = VBLANK;

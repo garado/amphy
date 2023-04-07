@@ -100,9 +100,9 @@ void Bus::Write(u16 address, u8 val) {
   if (address == TIMA && cpu->doneTMAreload) return;
 
   if (address < ROM1_START) {
-    MBC(address, val);
+    MBC_Write(address, val);
   } else if (address < VRAM_START) {
-    MBC(address, val);
+    MBC_Write(address, val);
   } else if (address < EXTRAM_START) {
     vram.at(address - VRAM_START) = val;
   } else if (address < WRAM0_START) {
@@ -218,8 +218,7 @@ u8 Bus::CopyRom(std::string fname) {
 }
 
 /* Return a pointer to a memory value */
-u8 * Bus::GetAddressPointer(u16 address)
-{
+u8 * Bus::GetAddressPointer(u16 address) {
   std::vector <u8>::iterator it;
   if (address <= 0x3FFF) {
     it = rom_00.begin();
@@ -247,18 +246,45 @@ u8 * Bus::GetAddressPointer(u16 address)
   return &(*it);
 }
 
-void Bus::MBC(u16 addr, u8 value) {
-
+void Bus::MBC_Write(u16 addr, u8 v) {
   switch (cartType) {
     case CT_ROM_ONLY: break;
 
     case CT_MBC1:
+      // RAM enable
       if (addr < 0x1FFF) {
-        ramEnable = value == 0x0A; 
-      } else if (addr < 0x3FFF) {
-        value &= 0x1F; // only lower 5 bits used
-        if (value == 0) value = 1;
-        SwitchBanks(value);
+        ramEnable = v == 0xA; // not sure what this does
+      }
+
+      // ROM bank number
+      else if (addr < 0x3FFF) {
+        v &= 0x1F; // only lower 5 bits used
+        if (v == 0x00 || v == 0x20 || v == 0x30 
+            || v == 0x40 || v == 0x60) v++;
+        SwitchBanks(v);
+      }
+
+      // RAM bank number
+      else if (addr < 0x5FFF) {
+      // TODO
+      }
+
+      // Banking mode select
+      else if (addr < 0x7FFF) {
+      // TODO
+      }
+
+      break;
+      
+    case CT_MBC2:
+      // If bit 8 set: RAM enable; else ROM bank number
+      if (addr < 0x3FFF) {
+        if (BIT_GET(v, 8)) {
+          if (v == 0) v++;
+          SwitchBanks(v & 0xF); // lower 4 bits specify bank
+        } else {
+          ramEnable = v == 0xA;
+        }
       }
       break;
 
@@ -268,7 +294,6 @@ void Bus::MBC(u16 addr, u8 value) {
     default: break;
   }
 }
-
 void Bus::SwitchBanks(u8 bankNum) {
   // Open rom for reading
   std::ifstream infile(romFname, std::ios::binary);

@@ -133,7 +133,6 @@ void Cpu::Tick(u8 cycles) {
 *   of sprite data from WRAM to OAM. */
 void Cpu::DMA_Transfer() {
   u8 val = bus->Read(dmaAddr++);
-  // printf("dma transfer: %02X\n", val);
   bus->Write(OAM_START + dmaByteCnt++, val);
   if (dmaByteCnt == 160) doDMATransfer = false;
 }
@@ -572,8 +571,6 @@ static const char* key_str[4] {
  *    Also set interrupt flag when necessary */
 void Cpu::Key_Down(KeyType type, Keys key) {
   u8 * vec = (type == KEYTYPE_DIR) ? &keyvec_dir : &keyvec_act;
-
-  printf("Cpu: Key_Down: %s %s\n", keytype_str[type], key_str[key]);
 
   // Interrupt on high to low if corresponding keytype bit is selected
   u8 selBit, curType;

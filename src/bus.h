@@ -115,7 +115,7 @@ class Bus
     void Write(u16 address, u8 val);
     void Unrestricted_Write(u16 address, u8 val);
     void Write_MMIO(u16 address, u8 val);
-    void MBC(u16 address, u8 value);
+    void MBC_Write(u16 address, u8 value);
     void SwitchBanks(u8 bankNum);
     u8 Read(u16 address) const;
     u8 Unrestricted_Read(u16 address) const;

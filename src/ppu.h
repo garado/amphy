@@ -25,7 +25,7 @@
 #define OAM_XPOS 1
 #define OAM_TIDX 2
 #define OAM_ATTR 3
-#define OAM_ATTR_BGW_OVER_OBJ 7
+#define OAM_ATTR_BG_PRIORITY 7
 #define OAM_ATTR_YFLIP 6
 #define OAM_ATTR_XFLIP 5
 #define OAM_ATTR_PALETTE 4
@@ -69,10 +69,8 @@ class Ppu
     // x coord for pixel transfer
     u16 x = 0;
 
-    // Window internal line counter (y coord)
-    u16 wcnt = 0;
-    bool doIncrementWcnt = false;
-    bool doDrawWindow = false;
+    u16 wcnt = 0; // Window internal line counter
+    bool renderedWindow = false;
 
     u16 dotsSinceStateSwitch = 0;
 
@@ -103,11 +101,9 @@ class Ppu
     void HBlank(u8 *nextState);
     void VBlank(u8 *nextState);
 
-    void Px_RenderBgWindow(void);
-
+    bool Px_RenderBgWindow(void);
     bool Px_RenderSprite(void);
-    u8 Px_FindScanlineSprite(void);
-    bool bgOverObj = false;
+    u8 bgPalette;
 
     void UpdateCycles(u8 state);
 
